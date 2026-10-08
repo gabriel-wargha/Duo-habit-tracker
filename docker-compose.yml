@@ -1,0 +1,24 @@
+# Local development only: a Postgres database running in a Docker container.
+# Start:  docker compose up -d     Stop:  docker compose down
+# These credentials are for your machine only. Production uses Neon (block 5).
+services:
+  db:
+    image: postgres:17
+    container_name: habittracker-db
+    environment:
+      POSTGRES_USER: habit
+      POSTGRES_PASSWORD: habit_dev_password
+      POSTGRES_DB: habittracker
+    ports:
+      - "5432:5432"
+    volumes:
+      # A named volume keeps your data when the container is removed.
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U habit -d habittracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:

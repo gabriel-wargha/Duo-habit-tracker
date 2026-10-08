@@ -1,0 +1,25 @@
+# --- .NET ---
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# --- Node / Vite ---
+node_modules/
+dist/
+*.local
+
+# --- Environment files (secrets!) ---
+# Only .env.example is committed; real values stay on your machine.
+.env
+.env.*
+!.env.example
+
+# --- Editors / OS ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.log

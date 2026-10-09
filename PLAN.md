@@ -5,7 +5,7 @@ Hosting (free): Azure App Service F1 (API) · Azure Static Web Apps (frontend) �
 
 ## Part 1 – Build and ship (blocks 1–10)
 - [x] 1. Project setup – repo, scaffold API + Vite React-TS, Postgres in Docker, Vite proxy. Done: React shows data from API.
-- [ ] 2. Data model – User, Habit, HabitMember, CheckIn (unique HabitId+UserId+Date), first migration.
+- [x] 2. Data model – User, Habit, HabitMember, CheckIn (unique HabitId+UserId+Date), first migration.
 - [ ] 3. Login back end – register/login, password hashing, JWT, /me, rate limit on login.
 - [ ] 4. Login front end – login/register pages, auth context, protected routes, logout.
 - [ ] 5. Deploy early – Neon DB, Azure App Service + Static Web Apps, env vars, GitHub Actions.

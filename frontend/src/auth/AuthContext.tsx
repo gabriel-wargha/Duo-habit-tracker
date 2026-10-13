@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { authApi, setUnauthorizedHandler, tokenStorage } from '../api/client'
 import type { AuthResponse, LoginRequest, RegisterRequest, User } from '../api/types'
@@ -7,11 +8,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [status, setStatus] = useState<AuthStatus>(() => (tokenStorage.get() ? 'loading' : 'anonymous'))
 
+  const queryClient = useQueryClient()
+
   const logout = useCallback(() => {
     tokenStorage.clear()
+    // Forget all cached API data, so the next person to log in on this browser
+    // never sees the previous user's habits, not even for a split second.
+    queryClient.clear()
     setUser(null)
     setStatus('anonymous')
-  }, [])
+  }, [queryClient])
 
   // Any 401 on a logged-in request (e.g. the token expired) logs us out.
   useEffect(() => {

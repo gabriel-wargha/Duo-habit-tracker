@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using HabitTracker.Api.Data;
 using HabitTracker.Api.Domain;
@@ -25,6 +26,10 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connect
 
 // Errors come back as ProblemDetails JSON (a standard shape: type, title, status, detail).
 builder.Services.AddProblemDetails();
+
+// Send enums as readable strings ("Owner") instead of numbers (0), in both directions.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // Checks the [Required], [EmailAddress], ... attributes on request DTOs. Invalid → 400.
 builder.Services.AddValidation();
@@ -124,5 +129,6 @@ app.UseRateLimiter();
 var api = app.MapGroup("/api");
 api.MapHealthEndpoints();
 api.MapAuthEndpoints();
+api.MapHabitEndpoints();
 
 app.Run();

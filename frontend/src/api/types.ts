@@ -33,3 +33,30 @@ export type ProblemDetails = {
   detail?: string
   errors?: Record<string, string[]>
 }
+
+// ----- Habits (Contracts/HabitDtos.cs) -----
+
+export type HabitRole = 'Owner' | 'Partner'
+
+export type Habit = {
+  id: string
+  name: string
+  description: string | null
+  emoji: string
+  color: string // hex, like "#22c55e"
+  scheduleDays: number // weekday bitmask, see utils/schedule.ts
+  startDate: string // "YYYY-MM-DD", a calendar day without time zone
+  isArchived: boolean
+  role: HabitRole // the current user's role in this habit
+  createdAtUtc: string
+}
+
+// Sent to POST /api/habits (create) and PUT /api/habits/{id} (update).
+export type HabitRequest = {
+  name: string
+  description: string | null
+  emoji: string
+  color: string
+  scheduleDays: number
+  startDate?: string
+}

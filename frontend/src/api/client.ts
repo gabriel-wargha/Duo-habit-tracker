@@ -49,7 +49,8 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 }
 
 // ----- The one function every request goes through -----
-async function request<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
+// Exported so feature files (like api/habits.ts) can define their own typed endpoints.
+export async function request<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
   const token = tokenStorage.get()
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (options.body !== undefined) headers['Content-Type'] = 'application/json'

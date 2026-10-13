@@ -53,3 +53,54 @@ Authorization: Bearer {{token}}
 
 ### Me without a token (401)
 GET {{HabitTracker.Api_HostAddress}}/api/auth/me
+
+### ----- Habits (all need @token from a login above) -----
+
+### List my active habits
+GET {{HabitTracker.Api_HostAddress}}/api/habits
+Authorization: Bearer {{token}}
+
+### Create a habit (scheduleDays 62 = Mon–Fri, see frontend/src/utils/schedule.ts)
+POST {{HabitTracker.Api_HostAddress}}/api/habits
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Read 10 pages",
+  "emoji": "📚",
+  "color": "#3b82f6",
+  "scheduleDays": 62,
+  "startDate": "2026-10-13"
+}
+
+### Create with bad input (400: name, color and scheduleDays errors)
+POST {{HabitTracker.Api_HostAddress}}/api/habits
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "emoji": "📚",
+  "color": "blue",
+  "scheduleDays": 0
+}
+
+###
+@habitId = paste-a-habit-id-here
+
+### Update a habit (PUT sends the whole habit)
+PUT {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Read 20 pages",
+  "description": "Before bed",
+  "emoji": "📖",
+  "color": "#a855f7",
+  "scheduleDays": 127
+}
+
+### Archive a habit (204; it disappears from the list but stays in the database)
+DELETE {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}
+Authorization: Bearer {{token}}

@@ -1,16 +1,107 @@
+import { useState } from 'react'
+import { useArchiveHabit, useCreateHabit, useHabits, useUpdateHabit } from '../api/habits'
+import type { Habit, HabitRequest } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { HabitCard } from '../components/HabitCard'
+import { HabitForm } from '../components/HabitForm'
+import { Modal } from '../components/Modal'
+import { localToday } from '../utils/dates'
 
-// Empty for now: block 6 fills this with the user's habits.
+// Which modal is open: none, "create", or "edit" with the habit being edited.
+// One state value instead of two booleans, so "create and edit at once" can't happen.
+type ModalState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; habit: Habit }
+
 export function DashboardPage() {
   const { user } = useAuth()
+  const habits = useHabits()
+  const createHabit = useCreateHabit()
+  const updateHabit = useUpdateHabit()
+  const archiveHabit = useArchiveHabit()
+  const [modal, setModal] = useState<ModalState>({ mode: 'closed' })
+
+  const close = () => setModal({ mode: 'closed' })
+
+  // mutateAsync returns a promise, so the form can await it and show errors if it fails.
+  async function handleCreate(values: HabitRequest) {
+    await createHabit.mutateAsync({ ...values, startDate: localToday() })
+    close()
+  }
+
+  async function handleUpdate(habit: Habit, values: HabitRequest) {
+    await updateHabit.mutateAsync({ id: habit.id, body: values })
+    close()
+  }
 
   return (
     <section>
-      <h1 className="text-2xl font-bold text-slate-900">Hi, {user?.displayName} 👋</h1>
-      <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-        <p className="font-medium text-slate-700">No habits yet</p>
-        <p className="mt-1 text-sm text-slate-500">Soon you'll be able to create your first habit here.</p>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-900">Hi, {user?.displayName} 👋</h1>
+        <button
+          type="button"
+          onClick={() => setModal({ mode: 'create' })}
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+        >
+          + New habit
+        </button>
       </div>
+
+      <div className="mt-6">
+        {/* The three states of any query: loading, error, success. */}
+        {habits.isPending && <p className="text-slate-500">Loading your habits…</p>}
+
+        {habits.isError && (
+          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            Couldn't load your habits: {habits.error.message}{' '}
+            <button type="button" onClick={() => habits.refetch()} className="font-medium underline">
+              Try again
+            </button>
+          </div>
+        )}
+
+        {habits.isSuccess && habits.data.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+            <p className="font-medium text-slate-700">No habits yet</p>
+            <p className="mt-1 text-sm text-slate-500">Create your first habit to get started.</p>
+            <button
+              type="button"
+              onClick={() => setModal({ mode: 'create' })}
+              className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+            >
+              + New habit
+            </button>
+          </div>
+        )}
+
+        {habits.isSuccess && habits.data.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {habits.data.map((habit) => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                onEdit={(h) => setModal({ mode: 'edit', habit: h })}
+                onArchive={(h) => archiveHabit.mutateAsync(h.id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {modal.mode === 'create' && (
+        <Modal title="New habit" onClose={close}>
+          <HabitForm submitLabel="Create habit" onSubmit={handleCreate} onCancel={close} />
+        </Modal>
+      )}
+
+      {modal.mode === 'edit' && (
+        <Modal title="Edit habit" onClose={close}>
+          <HabitForm
+            habit={modal.habit}
+            submitLabel="Save changes"
+            onSubmit={(values) => handleUpdate(modal.habit, values)}
+            onCancel={close}
+          />
+        </Modal>
+      )}
     </section>
   )
 }

@@ -4,7 +4,7 @@
 GET {{HabitTracker.Api_HostAddress}}/api/health
 Accept: application/json
 
-### Register (201 the first time, 409 if you run it again)
+### Register (201 the first time, 409 if you run it again; 429 after 10 sign-ups in an hour)
 POST {{HabitTracker.Api_HostAddress}}/api/auth/register
 Content-Type: application/json
 
@@ -35,6 +35,7 @@ Content-Type: application/json
 }
 
 ### Login with a wrong password (401). Run it 6 times in a minute → 429.
+# An email with no account also gets 401, with the same message and about the same response time.
 POST {{HabitTracker.Api_HostAddress}}/api/auth/login
 Content-Type: application/json
 

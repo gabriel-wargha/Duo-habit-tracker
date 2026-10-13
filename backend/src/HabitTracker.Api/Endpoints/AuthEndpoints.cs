@@ -13,12 +13,21 @@ namespace HabitTracker.Api.Endpoints;
 public static class AuthEndpoints
 {
     public const string LoginRateLimitPolicy = "login";
+    public const string RegisterRateLimitPolicy = "register";
+
+    // Used by Login when the email doesn't exist, so that case runs the same slow hash check
+    // as a wrong password. Created once, the first time AuthEndpoints is used.
+    private static readonly User TimingDummyUser = new() { Email = "timing-dummy@invalid", DisplayName = "timing-dummy" };
+    private static readonly string TimingDummyHash =
+        new PasswordHasher<User>().HashPassword(TimingDummyUser, "timing-dummy-password");
 
     public static RouteGroupBuilder MapAuthEndpoints(this RouteGroupBuilder api)
     {
         var auth = api.MapGroup("/auth");
 
-        auth.MapPost("/register", Register).WithName("Register");
+        auth.MapPost("/register", Register)
+            .WithName("Register")
+            .RequireRateLimiting(RegisterRateLimitPolicy);
 
         auth.MapPost("/login", Login)
             .WithName("Login")
@@ -81,9 +90,13 @@ public static class AuthEndpoints
         var email = NormalizeEmail(request.Email);
         var user = await db.Users.SingleOrDefaultAsync(u => u.Email == email);
 
-        var result = user is null
-            ? PasswordVerificationResult.Failed
-            : passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        // Always run the slow hash check, even when the email doesn't exist.
+        // Otherwise "no such email" answers instantly and "wrong password" takes ~100 ms,
+        // and that time difference tells an attacker which emails have an account.
+        var result = passwordHasher.VerifyHashedPassword(
+            user ?? TimingDummyUser,
+            user?.PasswordHash ?? TimingDummyHash,
+            request.Password);
 
         if (user is null || result == PasswordVerificationResult.Failed)
         {

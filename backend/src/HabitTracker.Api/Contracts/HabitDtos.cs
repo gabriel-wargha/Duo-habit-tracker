@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using HabitTracker.Api.Domain;
+using HabitTracker.Api.Services;
 
 namespace HabitTracker.Api.Contracts;
 
@@ -27,4 +28,6 @@ public record HabitResponse(
     bool IsArchived,
     // The calling user's role, so the front end knows whether to show Edit/Archive.
     HabitRole Role,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    // Streaks, completion rate and the last 7 days, for the current user (Services/StreakCalculator.cs).
+    HabitStats Stats);

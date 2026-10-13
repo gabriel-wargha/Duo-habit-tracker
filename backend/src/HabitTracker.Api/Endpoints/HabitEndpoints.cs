@@ -2,6 +2,7 @@ using System.Security.Claims;
 using HabitTracker.Api.Contracts;
 using HabitTracker.Api.Data;
 using HabitTracker.Api.Domain;
+using HabitTracker.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace HabitTracker.Api.Endpoints;
@@ -22,40 +23,48 @@ public static class HabitEndpoints
         return api;
     }
 
-    // GET /api/habits – the active habits the current user is a member of.
-    private static async Task<IResult> GetHabits(ClaimsPrincipal principal, AppDbContext db)
+    // The `today` query parameter (e.g. ?today=2026-10-13) is the user's local date,
+    // used to calculate streaks. See Services/LocalDate.cs for how it's checked.
+
+    // GET /api/habits – the active habits the current user is a member of, with their stats.
+    private static async Task<IResult> GetHabits(DateOnly? today, ClaimsPrincipal principal, AppDbContext db)
     {
         var userId = principal.GetUserId();
 
         // Start from the user's memberships: that's both the filter ("only my habits")
-        // and where the role comes from. Select(...) means EF only loads the columns we need.
-        var habits = await db.HabitMembers
+        // and where the role comes from.
+        var memberships = await db.HabitMembers
+            .Include(m => m.Habit)
             .Where(m => m.UserId == userId && !m.Habit.IsArchived)
             .OrderBy(m => m.Habit.CreatedAtUtc)
-            .Select(m => new HabitResponse(
-                m.Habit.Id, m.Habit.Name, m.Habit.Description, m.Habit.Emoji, m.Habit.Color,
-                m.Habit.ScheduleDays, m.Habit.StartDate, m.Habit.IsArchived, m.Role, m.Habit.CreatedAtUtc))
             .ToListAsync();
 
-        return Results.Ok(habits);
+        // One query for all check-ins of all these habits, instead of one query per habit (the "N+1" problem).
+        var checkIns = await LoadCheckIns(db, userId, memberships.Select(m => m.HabitId).ToList());
+        var localToday = LocalDate.Resolve(today);
+
+        return Results.Ok(memberships.Select(m => ToResponse(m.Habit, m.Role, checkIns, localToday)));
     }
 
     // GET /api/habits/{id}
-    private static async Task<IResult> GetHabit(Guid id, ClaimsPrincipal principal, AppDbContext db)
+    private static async Task<IResult> GetHabit(Guid id, DateOnly? today, ClaimsPrincipal principal, AppDbContext db)
     {
-        var membership = await FindMembership(db, id, principal.GetUserId());
-        return membership is null
-            ? HabitNotFound()
-            : Results.Ok(ToResponse(membership.Habit, membership.Role));
+        var userId = principal.GetUserId();
+        var membership = await FindMembership(db, id, userId);
+        if (membership is null) return HabitNotFound();
+
+        var checkIns = await LoadCheckIns(db, userId, [id]);
+        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, LocalDate.Resolve(today)));
     }
 
     // POST /api/habits
-    private static async Task<IResult> CreateHabit(HabitRequest request, ClaimsPrincipal principal, AppDbContext db)
+    private static async Task<IResult> CreateHabit(HabitRequest request, DateOnly? today, ClaimsPrincipal principal, AppDbContext db)
     {
+        var localToday = LocalDate.Resolve(today);
         var habit = new Habit
         {
             Name = request.Name,
-            StartDate = request.StartDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+            StartDate = request.StartDate ?? localToday,
         };
         Apply(request, habit);
 
@@ -65,13 +74,15 @@ public static class HabitEndpoints
         db.Habits.Add(habit);
         await db.SaveChangesAsync();
 
-        return Results.Created($"/api/habits/{habit.Id}", ToResponse(habit, HabitRole.Owner));
+        // A brand-new habit has no check-ins yet.
+        return Results.Created($"/api/habits/{habit.Id}", ToResponse(habit, HabitRole.Owner, [], localToday));
     }
 
     // PUT /api/habits/{id}
-    private static async Task<IResult> UpdateHabit(Guid id, HabitRequest request, ClaimsPrincipal principal, AppDbContext db)
+    private static async Task<IResult> UpdateHabit(Guid id, HabitRequest request, DateOnly? today, ClaimsPrincipal principal, AppDbContext db)
     {
-        var membership = await FindMembership(db, id, principal.GetUserId());
+        var userId = principal.GetUserId();
+        var membership = await FindMembership(db, id, userId);
         if (membership is null) return HabitNotFound();
         if (membership.Role != HabitRole.Owner) return OnlyOwner("edit");
 
@@ -79,7 +90,8 @@ public static class HabitEndpoints
         if (request.StartDate is { } startDate) membership.Habit.StartDate = startDate;
         await db.SaveChangesAsync();
 
-        return Results.Ok(ToResponse(membership.Habit, membership.Role));
+        var checkIns = await LoadCheckIns(db, userId, [id]);
+        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, LocalDate.Resolve(today)));
     }
 
     // DELETE /api/habits/{id} – archives (soft-deletes) instead of removing the row,
@@ -99,7 +111,8 @@ public static class HabitEndpoints
 
     // The user's membership in this habit (with the habit loaded), or null if they aren't a member.
     // Resource-based authorization: being logged in isn't enough, you must belong to *this* habit.
-    private static Task<HabitMember?> FindMembership(AppDbContext db, Guid habitId, Guid userId, bool includeArchived = false) =>
+    // Internal so CheckInEndpoints can use the same check.
+    internal static Task<HabitMember?> FindMembership(AppDbContext db, Guid habitId, Guid userId, bool includeArchived = false) =>
         db.HabitMembers
             .Include(m => m.Habit)
             .SingleOrDefaultAsync(m => m.HabitId == habitId
@@ -116,12 +129,31 @@ public static class HabitEndpoints
         habit.ScheduleDays = request.ScheduleDays;
     }
 
-    private static HabitResponse ToResponse(Habit habit, HabitRole role) => new(
-        habit.Id, habit.Name, habit.Description, habit.Emoji, habit.Color,
-        habit.ScheduleDays, habit.StartDate, habit.IsArchived, role, habit.CreatedAtUtc);
+    // The user's check-in dates per habit. Only the current user's: partners' check-ins come in block 9.
+    private static async Task<Dictionary<Guid, HashSet<DateOnly>>> LoadCheckIns(AppDbContext db, Guid userId, List<Guid> habitIds)
+    {
+        var rows = await db.CheckIns
+            .Where(c => c.UserId == userId && habitIds.Contains(c.HabitId))
+            .Select(c => new { c.HabitId, c.Date })
+            .ToListAsync();
+
+        return rows
+            .GroupBy(r => r.HabitId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Date).ToHashSet());
+    }
+
+    private static HabitResponse ToResponse(Habit habit, HabitRole role, Dictionary<Guid, HashSet<DateOnly>> checkIns, DateOnly today)
+    {
+        var dates = checkIns.GetValueOrDefault(habit.Id) ?? [];
+        var stats = StreakCalculator.Calculate(habit.ScheduleDays, habit.StartDate, dates, today);
+
+        return new HabitResponse(
+            habit.Id, habit.Name, habit.Description, habit.Emoji, habit.Color,
+            habit.ScheduleDays, habit.StartDate, habit.IsArchived, role, habit.CreatedAtUtc, stats);
+    }
 
     // Non-members get 404, not 403: a 403 would confirm that a habit with this id exists.
-    private static IResult HabitNotFound() => Results.Problem(
+    internal static IResult HabitNotFound() => Results.Problem(
         statusCode: StatusCodes.Status404NotFound,
         title: "Habit not found.");
 

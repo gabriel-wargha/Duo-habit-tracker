@@ -104,3 +104,22 @@ Content-Type: application/json
 ### Archive a habit (204; it disappears from the list but stays in the database)
 DELETE {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}
 Authorization: Bearer {{token}}
+
+### ----- Check-ins (any member, for themselves) -----
+# Use your local date for both the day and ?today=. PUT and DELETE are idempotent: run them twice, same result.
+
+### Check in for a day (204)
+PUT {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/checkins/2026-10-13?today=2026-10-13
+Authorization: Bearer {{token}}
+
+### Undo a check-in (204, even if there was none)
+DELETE {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/checkins/2026-10-13
+Authorization: Bearer {{token}}
+
+### A future day (400)
+PUT {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/checkins/2099-01-01?today=2026-10-13
+Authorization: Bearer {{token}}
+
+### Habits with stats (streaks, 30-day rate, last 7 days) for your local today
+GET {{HabitTracker.Api_HostAddress}}/api/habits?today=2026-10-13
+Authorization: Bearer {{token}}

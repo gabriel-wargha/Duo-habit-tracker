@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useArchiveHabit, useCreateHabit, useHabits, useUpdateHabit } from '../api/habits'
+import { useArchiveHabit, useCreateHabit, useHabits, useToggleTodayCheckIn, useUpdateHabit } from '../api/habits'
 import type { Habit, HabitRequest } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { HabitCard } from '../components/HabitCard'
@@ -17,9 +17,21 @@ export function DashboardPage() {
   const createHabit = useCreateHabit()
   const updateHabit = useUpdateHabit()
   const archiveHabit = useArchiveHabit()
+  const toggleToday = useToggleTodayCheckIn()
+  const [toggleError, setToggleError] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalState>({ mode: 'closed' })
 
   const close = () => setModal({ mode: 'closed' })
+
+  // mutate (not mutateAsync): we don't wait. The optimistic update already changed the card;
+  // if the request fails, the hook rolls the card back and we show why.
+  function handleToggleToday(habit: Habit, done: boolean) {
+    setToggleError(null)
+    toggleToday.mutate(
+      { habitId: habit.id, done },
+      { onError: (error) => setToggleError(`Couldn't update "${habit.name}": ${error.message}`) },
+    )
+  }
 
   // mutateAsync returns a promise, so the form can await it and show errors if it fails.
   async function handleCreate(values: HabitRequest) {
@@ -44,6 +56,12 @@ export function DashboardPage() {
           + New habit
         </button>
       </div>
+
+      {toggleError && (
+        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {toggleError}
+        </p>
+      )}
 
       <div className="mt-6">
         {/* The three states of any query: loading, error, success. */}
@@ -80,6 +98,7 @@ export function DashboardPage() {
                 habit={habit}
                 onEdit={(h) => setModal({ mode: 'edit', habit: h })}
                 onArchive={(h) => archiveHabit.mutateAsync(h.id)}
+                onToggleToday={handleToggleToday}
               />
             ))}
           </div>

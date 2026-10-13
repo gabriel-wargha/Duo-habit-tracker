@@ -117,7 +117,14 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Unhandled exceptions and empty error responses (like a bare 401) become ProblemDetails.
-app.UseExceptionHandler();
+// BadHttpRequestException means the client sent something unreadable (e.g. "/checkins/yesterday"
+// instead of a date, or broken JSON): that's the client's mistake, so keep its 400 instead of a 500.
+app.UseExceptionHandler(new ExceptionHandlerOptions
+{
+    StatusCodeSelector = exception => exception is BadHttpRequestException badRequest
+        ? badRequest.StatusCode
+        : StatusCodes.Status500InternalServerError,
+});
 app.UseStatusCodePages();
 
 // Order matters: first find out who the caller is, then check what they may do.
@@ -130,5 +137,6 @@ var api = app.MapGroup("/api");
 api.MapHealthEndpoints();
 api.MapAuthEndpoints();
 api.MapHabitEndpoints();
+api.MapCheckInEndpoints();
 
 app.Run();

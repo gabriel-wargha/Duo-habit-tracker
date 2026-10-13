@@ -49,6 +49,21 @@ export type Habit = {
   isArchived: boolean
   role: HabitRole // the current user's role in this habit
   createdAtUtc: string
+  stats: HabitStats // the current user's progress (Services/StreakCalculator.cs)
+}
+
+export type DayStatus = {
+  date: string // "YYYY-MM-DD"
+  isScheduled: boolean
+  isDone: boolean
+}
+
+export type HabitStats = {
+  currentStreak: number
+  longestStreak: number
+  completionRate30: number // 0–1
+  doneToday: boolean
+  last7Days: DayStatus[] // oldest first, ends with today
 }
 
 // Sent to POST /api/habits (create) and PUT /api/habits/{id} (update).

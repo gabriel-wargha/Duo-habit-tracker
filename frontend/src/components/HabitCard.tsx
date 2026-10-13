@@ -1,21 +1,27 @@
 import { useState } from 'react'
 import type { Habit } from '../api/types'
-import { WEEKDAYS, describeSchedule, isScheduledOn } from '../utils/schedule'
+import { describeSchedule } from '../utils/schedule'
+import { WeekDots } from './WeekDots'
 
 type HabitCardProps = {
   habit: Habit
   onEdit: (habit: Habit) => void
   onArchive: (habit: Habit) => Promise<void>
+  // Check in (done = true) or undo (done = false) for today.
+  onToggleToday: (habit: Habit, done: boolean) => void
 }
 
 // Shows one habit. It doesn't call the API itself: the parent passes in what Edit and Archive do,
 // so the same card can be reused anywhere (dashboard today, a partner view in block 9).
-export function HabitCard({ habit, onEdit, onArchive }: HabitCardProps) {
+export function HabitCard({ habit, onEdit, onArchive, onToggleToday }: HabitCardProps) {
   // Archiving asks for confirmation inline instead of window.confirm(), which blocks the whole page.
   const [confirming, setConfirming] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const isOwner = habit.role === 'Owner'
+  const { stats } = habit
+  // Today can be unscheduled: you can still check in (a bonus), it just doesn't count for the streak.
+  const todayScheduled = stats.last7Days.at(-1)?.isScheduled ?? false
 
   async function archive() {
     setArchiving(true)
@@ -44,28 +50,39 @@ export function HabitCard({ habit, onEdit, onArchive }: HabitCardProps) {
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold text-slate-900">{habit.name}</h2>
           {habit.description && <p className="truncate text-sm text-slate-500">{habit.description}</p>}
+          <p className="text-xs text-slate-400">{describeSchedule(habit.scheduleDays)}</p>
         </div>
+
+        {/* The main action: one tap to check in, another to undo. aria-pressed makes it a toggle
+            for screen readers. The cache updates before the server answers (see useToggleTodayCheckIn). */}
+        <button
+          type="button"
+          onClick={() => onToggleToday(habit, !stats.doneToday)}
+          aria-pressed={stats.doneToday}
+          aria-label={stats.doneToday ? `Undo ${habit.name} for today` : `Mark ${habit.name} done for today`}
+          style={stats.doneToday ? { backgroundColor: habit.color, borderColor: habit.color } : { borderColor: habit.color }}
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 text-xl transition-transform active:scale-90 ${
+            stats.doneToday ? 'text-white' : 'text-slate-300 hover:bg-slate-50'
+          }`}
+        >
+          ✓
+        </button>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {/* The 7 days, with scheduled ones filled in the habit's color. */}
-        <div className="flex gap-1" aria-label={`Scheduled: ${describeSchedule(habit.scheduleDays)}`}>
-          {WEEKDAYS.map(({ day, letter }) => {
-            const on = isScheduledOn(habit.scheduleDays, day)
-            return (
-              <span
-                key={day}
-                aria-hidden="true"
-                style={on ? { backgroundColor: habit.color } : undefined}
-                className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium ${
-                  on ? 'text-white' : 'bg-slate-100 text-slate-400'
-                }`}
-              >
-                {letter}
-              </span>
-            )
-          })}
-        </div>
+      <div className="flex items-center gap-3 text-sm">
+        <span
+          className={`font-semibold ${stats.currentStreak > 0 ? 'text-orange-600' : 'text-slate-400'}`}
+          aria-label={`Current streak: ${stats.currentStreak} days`}
+        >
+          🔥 {stats.currentStreak}
+        </span>
+        <span className="text-slate-500">Best {stats.longestStreak}</span>
+        <span className="text-slate-500">{Math.round(stats.completionRate30 * 100)}% · 30 days</span>
+        {!todayScheduled && <span className="text-xs text-slate-400">Rest day</span>}
+      </div>
+
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <WeekDots days={stats.last7Days} color={habit.color} />
 
         {/* Only the owner may change a habit; the API enforces this too (403). */}
         {isOwner &&

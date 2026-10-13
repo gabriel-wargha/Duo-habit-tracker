@@ -4,4 +4,51 @@
 GET {{HabitTracker.Api_HostAddress}}/api/health
 Accept: application/json
 
+### Register (201 the first time, 409 if you run it again)
+POST {{HabitTracker.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "Password123!",
+  "displayName": "Alice"
+}
+
+### Register with bad input (400 with validation errors)
+POST {{HabitTracker.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "short",
+  "displayName": ""
+}
+
+### Login – copy "token" from the response into @token below
+# @name login
+POST {{HabitTracker.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "Password123!"
+}
+
+### Login with a wrong password (401). Run it 6 times in a minute → 429.
+POST {{HabitTracker.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "wrong-password"
+}
+
 ###
+@token = paste-your-token-here
+
+### Me with the token (200 + your user)
+GET {{HabitTracker.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Me without a token (401)
+GET {{HabitTracker.Api_HostAddress}}/api/auth/me

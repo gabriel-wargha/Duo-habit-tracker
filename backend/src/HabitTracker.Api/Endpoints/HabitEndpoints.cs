@@ -39,11 +39,14 @@ public static class HabitEndpoints
             .OrderBy(m => m.Habit.CreatedAtUtc)
             .ToListAsync();
 
-        // One query for all check-ins of all these habits, instead of one query per habit (the "N+1" problem).
-        var checkIns = await LoadCheckIns(db, userId, memberships.Select(m => m.HabitId).ToList());
+        // One query each for all check-ins and all members of these habits,
+        // instead of one query per habit (the "N+1" problem).
+        var habitIds = memberships.Select(m => m.HabitId).ToList();
+        var checkIns = await LoadCheckIns(db, userId, habitIds);
+        var members = await LoadMembers(db, habitIds);
         var localToday = LocalDate.Resolve(today);
 
-        return Results.Ok(memberships.Select(m => ToResponse(m.Habit, m.Role, checkIns, localToday)));
+        return Results.Ok(memberships.Select(m => ToResponse(m.Habit, m.Role, checkIns, members, localToday)));
     }
 
     // GET /api/habits/{id}
@@ -54,7 +57,8 @@ public static class HabitEndpoints
         if (membership is null) return HabitNotFound();
 
         var checkIns = await LoadCheckIns(db, userId, [id]);
-        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, LocalDate.Resolve(today)));
+        var members = await LoadMembers(db, [id]);
+        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, members, LocalDate.Resolve(today)));
     }
 
     // POST /api/habits
@@ -74,8 +78,9 @@ public static class HabitEndpoints
         db.Habits.Add(habit);
         await db.SaveChangesAsync();
 
-        // A brand-new habit has no check-ins yet.
-        return Results.Created($"/api/habits/{habit.Id}", ToResponse(habit, HabitRole.Owner, [], localToday));
+        // A brand-new habit has no check-ins yet, and only one member: the creator.
+        var members = await LoadMembers(db, [habit.Id]);
+        return Results.Created($"/api/habits/{habit.Id}", ToResponse(habit, HabitRole.Owner, [], members, localToday));
     }
 
     // PUT /api/habits/{id}
@@ -91,7 +96,8 @@ public static class HabitEndpoints
         await db.SaveChangesAsync();
 
         var checkIns = await LoadCheckIns(db, userId, [id]);
-        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, LocalDate.Resolve(today)));
+        var members = await LoadMembers(db, [id]);
+        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, members, LocalDate.Resolve(today)));
     }
 
     // DELETE /api/habits/{id} – archives (soft-deletes) instead of removing the row,
@@ -142,14 +148,35 @@ public static class HabitEndpoints
             .ToDictionary(g => g.Key, g => g.Select(r => r.Date).ToHashSet());
     }
 
-    private static HabitResponse ToResponse(Habit habit, HabitRole role, Dictionary<Guid, HashSet<DateOnly>> checkIns, DateOnly today)
+    // Everyone in each habit, owner first, then partners in the order they joined.
+    private static async Task<Dictionary<Guid, List<MemberResponse>>> LoadMembers(AppDbContext db, List<Guid> habitIds)
+    {
+        var rows = await db.HabitMembers
+            .Where(m => habitIds.Contains(m.HabitId))
+            .OrderBy(m => m.Role == HabitRole.Owner ? 0 : 1)
+            .ThenBy(m => m.JoinedAtUtc)
+            .Select(m => new { m.HabitId, Member = new MemberResponse(m.UserId, m.User.DisplayName, m.Role) })
+            .ToListAsync();
+
+        return rows
+            .GroupBy(r => r.HabitId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Member).ToList());
+    }
+
+    private static HabitResponse ToResponse(
+        Habit habit,
+        HabitRole role,
+        Dictionary<Guid, HashSet<DateOnly>> checkIns,
+        Dictionary<Guid, List<MemberResponse>> members,
+        DateOnly today)
     {
         var dates = checkIns.GetValueOrDefault(habit.Id) ?? [];
         var stats = StreakCalculator.Calculate(habit.ScheduleDays, habit.StartDate, dates, today);
 
         return new HabitResponse(
             habit.Id, habit.Name, habit.Description, habit.Emoji, habit.Color,
-            habit.ScheduleDays, habit.StartDate, habit.IsArchived, role, habit.CreatedAtUtc, stats);
+            habit.ScheduleDays, habit.StartDate, habit.IsArchived, role, habit.CreatedAtUtc, stats,
+            members.GetValueOrDefault(habit.Id) ?? []);
     }
 
     // Non-members get 404, not 403: a 403 would confirm that a habit with this id exists.

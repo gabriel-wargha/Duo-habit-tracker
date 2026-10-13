@@ -1,15 +1,22 @@
 import { useState } from 'react'
 import { useArchiveHabit, useCreateHabit, useHabits, useToggleTodayCheckIn, useUpdateHabit } from '../api/habits'
+import { useRemoveMember } from '../api/invites'
 import type { Habit, HabitRequest } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { HabitCard } from '../components/HabitCard'
 import { HabitForm } from '../components/HabitForm'
 import { Modal } from '../components/Modal'
+import { ShareDialog } from '../components/ShareDialog'
 import { localToday } from '../utils/dates'
 
 // Which modal is open: none, "create", or "edit" with the habit being edited.
 // One state value instead of two booleans, so "create and edit at once" can't happen.
-type ModalState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; habit: Habit }
+// Share stores only the id: the dialog then always shows the latest data (e.g. after removing a partner).
+type ModalState =
+  | { mode: 'closed' }
+  | { mode: 'create' }
+  | { mode: 'edit'; habit: Habit }
+  | { mode: 'share'; habitId: string }
 
 export function DashboardPage() {
   const { user } = useAuth()
@@ -18,10 +25,18 @@ export function DashboardPage() {
   const updateHabit = useUpdateHabit()
   const archiveHabit = useArchiveHabit()
   const toggleToday = useToggleTodayCheckIn()
+  const removeMember = useRemoveMember()
   const [toggleError, setToggleError] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalState>({ mode: 'closed' })
 
   const close = () => setModal({ mode: 'closed' })
+  const sharedHabit = modal.mode === 'share' ? habits.data?.find((h) => h.id === modal.habitId) : undefined
+
+  // Leaving = removing yourself from the habit's members.
+  async function handleLeave(habit: Habit) {
+    if (!user) return
+    await removeMember.mutateAsync({ habitId: habit.id, userId: user.id })
+  }
 
   // mutate (not mutateAsync): we don't wait. The optimistic update already changed the card;
   // if the request fails, the hook rolls the card back and we show why.
@@ -99,6 +114,8 @@ export function DashboardPage() {
                 onEdit={(h) => setModal({ mode: 'edit', habit: h })}
                 onArchive={(h) => archiveHabit.mutateAsync(h.id)}
                 onToggleToday={handleToggleToday}
+                onShare={(h) => setModal({ mode: 'share', habitId: h.id })}
+                onLeave={handleLeave}
               />
             ))}
           </div>
@@ -110,6 +127,8 @@ export function DashboardPage() {
           <HabitForm submitLabel="Create habit" onSubmit={handleCreate} onCancel={close} />
         </Modal>
       )}
+
+      {sharedHabit && <ShareDialog habit={sharedHabit} onClose={close} />}
 
       {modal.mode === 'edit' && (
         <Modal title="Edit habit" onClose={close}>

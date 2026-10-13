@@ -30,4 +30,8 @@ public record HabitResponse(
     HabitRole Role,
     DateTime CreatedAtUtc,
     // Streaks, completion rate and the last 7 days, for the current user (Services/StreakCalculator.cs).
-    HabitStats Stats);
+    HabitStats Stats,
+    // Everyone tracking this habit, owner first.
+    IReadOnlyList<MemberResponse> Members);
+
+public record MemberResponse(Guid UserId, string DisplayName, HabitRole Role);

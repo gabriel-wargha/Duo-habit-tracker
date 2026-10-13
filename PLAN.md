@@ -11,7 +11,7 @@ Hosting: postponed – the app runs locally for now (see "Later" below).
 - ⏸ 5. Deploy – postponed, moved to "Later" below. Skip it: after block 4, go to block 6.
 - [x] 6. Habits – create/edit/archive: name, emoji, color, scheduled weekdays.
 - [x] 7. Check-ins and streaks – "done today" toggle, unit-tested streak logic, last-7-days dots.
-- [ ] 8. Invite a partner – share link with expiring code, accept page adds HabitMember.
+- [x] 8. Invite a partner – share link with expiring code, accept page adds HabitMember.
 - [ ] 9. Track together – side-by-side check-ins, each streak + joint streak, polling refresh.
 - [ ] 10. Polish + v1 – heatmap, loading/empty/error states, mobile, demo account, README.
 

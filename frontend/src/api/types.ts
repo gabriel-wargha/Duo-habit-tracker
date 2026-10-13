@@ -50,6 +50,13 @@ export type Habit = {
   role: HabitRole // the current user's role in this habit
   createdAtUtc: string
   stats: HabitStats // the current user's progress (Services/StreakCalculator.cs)
+  members: Member[] // everyone tracking this habit, owner first
+}
+
+export type Member = {
+  userId: string
+  displayName: string
+  role: HabitRole
 }
 
 export type DayStatus = {
@@ -74,4 +81,26 @@ export type HabitRequest = {
   color: string
   scheduleDays: number
   startDate?: string
+}
+
+// ----- Invites (Contracts/InviteDtos.cs) -----
+
+export type CreateInviteResponse = {
+  code: string
+  expiresAtUtc: string
+}
+
+export type InvitePreview = {
+  habitName: string
+  habitDescription: string | null
+  emoji: string
+  color: string
+  scheduleDays: number
+  inviterName: string
+  expiresAtUtc: string
+  isMember: boolean // true if you're logged in and already track this habit
+}
+
+export type AcceptInviteResponse = {
+  habitId: string
 }

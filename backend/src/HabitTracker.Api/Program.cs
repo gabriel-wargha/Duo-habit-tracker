@@ -138,5 +138,6 @@ api.MapHealthEndpoints();
 api.MapAuthEndpoints();
 api.MapHabitEndpoints();
 api.MapCheckInEndpoints();
+api.MapInviteEndpoints();
 
 app.Run();

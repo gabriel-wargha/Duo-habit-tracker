@@ -123,3 +123,26 @@ Authorization: Bearer {{token}}
 ### Habits with stats (streaks, 30-day rate, last 7 days) for your local today
 GET {{HabitTracker.Api_HostAddress}}/api/habits?today=2026-10-13
 Authorization: Bearer {{token}}
+
+### ----- Sharing: invites and partners -----
+
+### Create an invite (owner only; 409 if the habit already has a partner). Copy "code" below.
+POST {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/invites
+Authorization: Bearer {{token}}
+
+###
+@inviteCode = paste-an-invite-code-here
+
+### Preview an invite (works without a token; 410 if expired or used)
+GET {{HabitTracker.Api_HostAddress}}/api/invites/{{inviteCode}}
+
+### Accept an invite (log in as a *different* user first and use their token)
+POST {{HabitTracker.Api_HostAddress}}/api/invites/{{inviteCode}}/accept
+Authorization: Bearer {{token}}
+
+###
+@memberUserId = paste-a-user-id-here
+
+### Remove a partner (owner) or leave (your own user id)
+DELETE {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/members/{{memberUserId}}
+Authorization: Bearer {{token}}

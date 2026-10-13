@@ -8,7 +8,7 @@ The project owner is **learning** while building, so the explanations matter as 
 - **What:** A social habit tracker. Users log in, track habits, and track habits *together* with partners.
 - **Plan:** `PLAN.md` is the checklist. `BLOCKS.md` has the details for every block (goal, tasks, concepts, files, done-when, commit).
 - **Stack:** ASP.NET Core Web API + EF Core + PostgreSQL (`backend/`) · React + TypeScript + Vite + TanStack Query + React Router + Tailwind (`frontend/`).
-- **Hosting:** Azure App Service F1 (API), Azure Static Web Apps (frontend), Neon (Postgres), GitHub Actions (CI/CD).
+- **Hosting:** postponed. The app runs locally (API + React + Postgres in Docker). Deployment is parked under "Later – Deploy" at the end of `BLOCKS.md`; don't add hosting, CORS-for-production or deploy workflows unless the owner asks.
 
 ## The workflow
 
@@ -16,7 +16,7 @@ The owner will say something like **"Build block 4"**. For every block, follow t
 
 ### 1. Prepare
 - Read `PLAN.md` and the block's section in `BLOCKS.md`.
-- Check that earlier blocks are done (checked in `PLAN.md`). If one isn't, say so and ask before continuing.
+- Check that earlier blocks are done (checked in `PLAN.md`). If one isn't, say so and ask before continuing. Block 5 (deploy) is postponed: skip it and don't treat it as missing.
 - Look at the current code before changing anything. Never assume what's there.
 - If something in the block is unclear or conflicts with the existing code, ask **one** short question before building.
 
@@ -29,7 +29,7 @@ The owner will say something like **"Build block 4"**. For every block, follow t
 ### 3. Verify
 - Build the backend (`dotnet build`) and run tests (`dotnet test`) when there are tests.
 - Typecheck and build the frontend (`npm run build`).
-- Check the block's **"Done when"** condition. If you can't check it yourself (for example, it needs the browser or Azure), give the owner exact steps to check it.
+- Check the block's **"Done when"** condition. If you can't check it yourself (for example, it needs the browser), give the owner exact steps to check it.
 - Never claim something works if it wasn't verified. Say what was and wasn't checked.
 
 ### 4. Explain (after building)
@@ -69,14 +69,14 @@ Cover **every concept listed for the block in `BLOCKS.md`**, plus any new concep
 
 ## Rules
 
-- **Secrets never go in git.** Connection strings and JWT keys live in .NET user secrets locally and in Azure app settings in production. Keep `.env*` files out of git (except `.env.example`).
+- **Secrets never go in git.** Connection strings and JWT keys live in .NET user secrets locally (and in the host's environment variables once the app is deployed). Keep `.env*` files out of git (except `.env.example`).
 - **Free tier first.** Don't add services that cost money without asking.
 - **TypeScript strict mode** on the frontend. No `any` unless there's a comment explaining why.
 - **Business logic stays testable.** Logic like streak calculation lives in pure classes with xUnit tests.
 - **API conventions:** routes under `/api`, JSON in camelCase, errors as ProblemDetails, correct status codes (400 validation, 401 not logged in, 403 not allowed, 404 not found, 409 conflict).
 - **Dates:** check-ins use `DateOnly` for the user's local calendar day; timestamps are stored in UTC.
 - **Don't delete or rewrite the owner's code** outside the block's scope without asking.
-- If a command needs to run on the owner's machine (for example, `dotnet ef database update` or Azure CLI), give the exact command and what to expect.
+- If a command needs to run on the owner's machine (for example, `dotnet ef database update`), give the exact command and what to expect.
 
 ## Project layout (target)
 
@@ -87,7 +87,7 @@ habit-tracker/
 ├── BLOCKS.md
 ├── README.md
 ├── docker-compose.yml
-├── .github/workflows/
+├── .github/workflows/   # CI in block 15; deploy workflows later
 ├── backend/
 │   ├── HabitTracker.sln
 │   ├── src/HabitTracker.Api/

@@ -3,7 +3,7 @@
 Each block is about 1 hour. Every block lists its **goal**, the **tasks**, the **concepts** you'll learn, the **files** it touches, a **done when** check, and a suggested **commit message**.
 
 **Stack:** ASP.NET Core Web API (.NET) · EF Core · PostgreSQL · React + TypeScript · Vite · TanStack Query · React Router · Tailwind CSS
-**Hosting (free):** Azure App Service F1 (API) · Azure Static Web Apps (frontend) · Neon (Postgres) · GitHub Actions (CI/CD)
+**Hosting:** postponed. The app runs locally for now. Deployment is parked in [Later – Deploy](#later--deploy-postponed) at the end of this file.
 
 ## Core idea: tracking habits with someone else
 
@@ -19,7 +19,7 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 
 ---
 
-# Part 1 – Build and ship (blocks 1–10)
+# Part 1 – Build the app (blocks 1–10)
 
 ## Block 1 – Project setup
 
@@ -111,27 +111,9 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 
 ---
 
-## Block 5 – Deploy early
+## Block 5 – Deploy (postponed)
 
-**Goal:** The app is live on the internet, with automatic deploys.
-
-**Tasks**
-1. Create a free Neon Postgres database and copy its connection string.
-2. Create an Azure App Service (Linux, F1 Free) for the API.
-3. Set app settings: `ConnectionStrings__Default`, `Jwt__Key`, `Cors__AllowedOrigins`.
-4. Configure CORS in the API to allow only the frontend's domain.
-5. Apply migrations to Neon.
-6. Create an Azure Static Web App for the frontend, with `VITE_API_URL` pointing at the API, plus SPA fallback routing.
-7. Add GitHub Actions workflows: one for the API, one for the frontend.
-8. Set a budget alert in Azure.
-
-**Concepts:** environments (Development vs. Production) · configuration via environment variables · CORS and why it's needed in production · CI/CD pipelines · build artifacts · secrets in GitHub Actions · SPA routing on static hosts · cold starts on free tiers
-
-**Files:** `.github/workflows/api.yml`, `.github/workflows/frontend.yml`, `frontend/staticwebapp.config.json`, `Program.cs`
-
-**Done when:** you can register and log in on your live URL, and a `git push` redeploys automatically.
-
-**Commit:** `ci: deploy API to Azure App Service and frontend to Static Web Apps`
+**Skipped for now.** Deployment was moved to [Later – Deploy](#later--deploy-postponed) at the end of this file, so we can focus on building the app locally. Block numbers stay the same so code comments that mention block numbers still match. After block 4, go straight to block 6.
 
 ---
 
@@ -150,7 +132,7 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 
 **Files:** `Endpoints/HabitEndpoints.cs`, `Contracts/HabitDtos.cs`, `src/api/habits.ts`, `src/pages/DashboardPage.tsx`, `src/components/HabitCard.tsx`, `src/components/HabitForm.tsx`
 
-**Done when:** you can create, edit and archive habits on the live site.
+**Done when:** you can create, edit and archive habits in the browser.
 
 **Commit:** `feat: habit CRUD with schedule, color and emoji`
 
@@ -230,14 +212,14 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 3. Mobile layout pass and basic accessibility (labels, focus states, contrast).
 4. A landing page for logged-out visitors explaining the app.
 5. Seed a demo account with sample data.
-6. README: description, features, screenshots, architecture diagram, tech stack, live link, demo login, how to run locally.
+6. README: description, features, screenshots, architecture diagram, tech stack, demo login, how to run locally (add the live link once the app is deployed).
 7. Tag the release `v1.0.0`.
 
 **Concepts:** UX states (loading/empty/error) · responsive design with Tailwind · accessibility basics · data seeding · writing a strong project README · semantic versioning
 
 **Files:** `src/components/Heatmap.tsx`, `src/pages/LandingPage.tsx`, `Data/Seed.cs`, `README.md`
 
-**Done when:** the live site looks good on phone and desktop, and a stranger can understand it from the README.
+**Done when:** the app looks good on phone and desktop sizes (use the browser's device toolbar), and a stranger can run and understand it from the README.
 
 **Commit:** `feat: v1 polish, landing page and README` → tag `v1.0.0`
 
@@ -271,7 +253,7 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 2. A `BackgroundService` that runs every minute, finds habits due for a reminder in each user's local time, and skips ones already done today.
 3. Send emails through a free-tier email API behind an `IEmailSender` interface.
 4. Settings page for reminder preferences and time zone.
-5. Document the free-tier limitation (the app sleeps) and the workaround (external scheduler or a paid plan).
+5. Note for later: on a free host the app can sleep, so reminders may not fire. Add this to the deploy notes (external scheduler or a paid plan).
 
 **Concepts:** hosted/background services · dependency injection scopes inside background work · time zones (`TimeZoneInfo`) · interfaces for swappable services · idempotency (don't send twice)
 
@@ -315,14 +297,45 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 **Goal:** It looks and works like a professional product.
 
 **Tasks**
-1. Integration tests with `WebApplicationFactory` + Testcontainers (real Postgres in Docker), run in CI.
+1. Integration tests with `WebApplicationFactory` + Testcontainers (real Postgres in Docker), plus a GitHub Actions workflow that builds and runs all tests on every push (CI only, no deploy).
 2. Installable PWA (manifest, icons, service worker).
 3. Google login.
 4. Refresh tokens in httpOnly cookies instead of a long-lived token in localStorage.
-5. Error monitoring and logging with Application Insights; global error handling with ProblemDetails.
+5. Structured logging (who did what, and what failed) so errors are easy to trace. Hosted monitoring like Application Insights waits for deploy.
 
 **Concepts:** integration vs. unit tests · test containers · PWAs · OAuth/OpenID Connect · refresh-token rotation · observability
 
-**Done when:** CI runs integration tests, the app installs on your phone, and errors show up in your dashboard.
+**Done when:** CI runs integration tests on every push, the app installs as a PWA on your computer, and errors are logged with useful details.
 
 **Commit:** `feat: integration tests, PWA, Google login and monitoring`
+
+---
+
+# Later – Deploy (postponed)
+
+Moved out of the main plan on purpose. Do this whenever you want the app online, ideally after block 10 (v1). It needs a GitHub repo and an Azure account (Azure asks for a card at sign-up; Azure for Students doesn't).
+
+**Hosting (free tiers):** Azure App Service F1 (API) · Azure Static Web Apps (frontend) · Neon (Postgres) · GitHub Actions (CI/CD)
+
+**Goal:** The app is live on the internet, with automatic deploys.
+
+**Tasks**
+1. Create a free Neon Postgres database and copy its connection string.
+2. Create an Azure App Service (Linux, F1 Free) for the API.
+3. Set app settings: `ConnectionStrings__Default`, `Jwt__Key`, `Cors__AllowedOrigins`.
+4. Configure CORS in the API to allow only the frontend's domain.
+5. Add `app.UseHsts()` for production, so browsers always use HTTPS.
+6. Configure forwarded headers so the API sees each user's real IP behind Azure's proxy. Without it, every user can share one login rate limit (5 tries per minute for everyone).
+7. Apply migrations to Neon.
+8. Create an Azure Static Web App for the frontend, with `VITE_API_URL` pointing at the API, plus SPA fallback routing.
+9. Add GitHub Actions workflows: one for the API, one for the frontend.
+10. Set a budget alert in Azure.
+11. Optional: move error monitoring to Application Insights; add the live link and demo login to the README.
+
+**Concepts:** environments (Development vs. Production) · configuration via environment variables · CORS and why it's needed in production · HSTS · reverse proxies and forwarded headers · CI/CD pipelines · build artifacts · secrets in GitHub Actions · SPA routing on static hosts · cold starts on free tiers
+
+**Files:** `.github/workflows/api.yml`, `.github/workflows/frontend.yml`, `frontend/staticwebapp.config.json`, `Program.cs`
+
+**Done when:** you can register and log in on your live URL, and a `git push` redeploys automatically.
+
+**Commit:** `ci: deploy API to Azure App Service and frontend to Static Web Apps`

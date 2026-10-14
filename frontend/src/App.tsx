@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { DashboardPage } from './pages/DashboardPage'
+import { HabitDetailPage } from './pages/HabitDetailPage'
 import { InvitePage } from './pages/InvitePage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -20,6 +21,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/habits/:id" element={<HabitDetailPage />} />
         </Route>
       </Route>
 

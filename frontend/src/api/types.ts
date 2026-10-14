@@ -51,12 +51,15 @@ export type Habit = {
   createdAtUtc: string
   stats: HabitStats // the current user's progress (Services/StreakCalculator.cs)
   members: Member[] // everyone tracking this habit, owner first
+  jointStreak: number | null // days in a row everyone completed; null when tracked alone
 }
 
 export type Member = {
   userId: string
   displayName: string
   role: HabitRole
+  doneToday: boolean
+  currentStreak: number
 }
 
 export type DayStatus = {
@@ -71,6 +74,28 @@ export type HabitStats = {
   completionRate30: number // 0–1
   doneToday: boolean
   last7Days: DayStatus[] // oldest first, ends with today
+}
+
+// GET /api/habits/{id}: the card data plus everyone's last 30 days.
+export type HabitDetail = {
+  habit: Habit
+  progress: MemberProgress[] // one row per member, owner first
+  joint: JointProgress | null // the "together" row; null when tracked alone
+}
+
+export type MemberProgress = {
+  userId: string
+  displayName: string
+  role: HabitRole
+  startDate: string // when this member's stats start (a partner: the day they joined)
+  stats: HabitStats
+  last30Days: DayStatus[]
+}
+
+export type JointProgress = {
+  startDate: string
+  stats: HabitStats
+  last30Days: DayStatus[]
 }
 
 // Sent to POST /api/habits (create) and PUT /api/habits/{id} (update).

@@ -11,6 +11,9 @@ public record HabitStats(
     bool DoneToday,
     IReadOnlyList<DayStatus> Last7Days);
 
+// One member's input to the calculator: when their stats start, and the days they checked in.
+public record MemberDays(DateOnly StartDate, IReadOnlySet<DateOnly> CheckIns);
+
 // A pure function: the result depends only on the arguments.
 // No database, no clock (today is passed in), no side effects. That's what makes it easy to test:
 // give it dates, check the numbers.
@@ -88,8 +91,38 @@ public static class StreakCalculator
         return scheduled == 0 ? 0 : (double)done / scheduled;
     }
 
-    // Oldest first, ending with today.
-    private static List<DayStatus> LastDays(int count, int scheduleDays, DateOnly startDate, IReadOnlySet<DateOnly> checkIns, DateOnly today) =>
+    // ----- Tracking together (block 9) -----
+
+    // When a member's stats start. The owner counts from the habit's start date. A partner counts
+    // from the day they joined: days before that weren't "missed", they just weren't there yet.
+    //
+    // joinedOn comes from a UTC timestamp, so it can be a day off from the partner's local calendar.
+    // If they checked in earlier than that (e.g. on their local join day), we start from that check-in
+    // instead, so a real check-in is never ignored.
+    public static DateOnly MemberStartDate(DateOnly habitStart, bool isOwner, DateOnly joinedOn, IReadOnlySet<DateOnly> checkIns)
+    {
+        if (isOwner) return habitStart;
+
+        var start = checkIns.Count > 0 && checkIns.Min() < joinedOn ? checkIns.Min() : joinedOn;
+        return start > habitStart ? start : habitStart;
+    }
+
+    // "Together" as if it were one more member: the days *everyone* checked in (the intersection of
+    // their check-in sets), starting from the day the last member started. Feed the result to
+    // Calculate() and you get the joint streak, joint best and joint completion rate for free.
+    public static MemberDays Joint(IReadOnlyList<MemberDays> members)
+    {
+        if (members.Count == 0) throw new ArgumentException("A habit always has at least one member.", nameof(members));
+
+        var together = new HashSet<DateOnly>(members[0].CheckIns);
+        foreach (var member in members.Skip(1))
+            together.IntersectWith(member.CheckIns);
+
+        return new MemberDays(members.Max(m => m.StartDate), together);
+    }
+
+    // Oldest first, ending with today. Calculate() uses 7 days for the cards; the detail page asks for 30.
+    public static List<DayStatus> LastDays(int count, int scheduleDays, DateOnly startDate, IReadOnlySet<DateOnly> checkIns, DateOnly today) =>
         Enumerable.Range(0, count)
             .Select(i => today.AddDays(i - (count - 1)))
             .Select(day => new DayStatus(

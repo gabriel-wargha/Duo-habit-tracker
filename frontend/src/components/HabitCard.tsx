@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import type { Habit } from '../api/types'
+import { useAuth } from '../auth/useAuth'
 import { describeSchedule } from '../utils/schedule'
+import { MemberAvatars } from './MemberAvatars'
 import { WeekDots } from './WeekDots'
 
 type HabitCardProps = {
@@ -17,6 +20,7 @@ type HabitCardProps = {
 // so the same card can be reused anywhere (dashboard today, a partner view in block 9).
 export function HabitCard({ habit, onEdit, onArchive, onShare, onLeave, onToggleToday }: HabitCardProps) {
   // Archiving and leaving ask for confirmation inline instead of window.confirm(), which blocks the whole page.
+  const { user } = useAuth()
   const [confirming, setConfirming] = useState<'archive' | 'leave' | null>(null)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,6 +30,8 @@ export function HabitCard({ habit, onEdit, onArchive, onShare, onLeave, onToggle
   const todayScheduled = stats.last7Days.at(-1)?.isScheduled ?? false
   const owner = habit.members.find((m) => m.role === 'Owner')
   const partners = habit.members.filter((m) => m.role === 'Partner')
+  // Everyone except you: their avatars get a ✅ when they've finished today.
+  const others = habit.members.filter((m) => m.userId !== user?.id)
 
   async function confirm() {
     setWorking(true)
@@ -52,7 +58,12 @@ export function HabitCard({ habit, onEdit, onArchive, onShare, onLeave, onToggle
           {habit.emoji}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate font-semibold text-slate-900">{habit.name}</h2>
+          <h2 className="truncate font-semibold text-slate-900">
+            {/* The name opens the detail page with everyone's progress side by side. */}
+            <Link to={`/habits/${habit.id}`} className="hover:underline">
+              {habit.name}
+            </Link>
+          </h2>
           {habit.description && <p className="truncate text-sm text-slate-500">{habit.description}</p>}
           <p className="text-xs text-slate-400">{describeSchedule(habit.scheduleDays)}</p>
           {/* Who you're tracking with: owners see their partner, partners see the owner. */}
@@ -88,6 +99,16 @@ export function HabitCard({ habit, onEdit, onArchive, onShare, onLeave, onToggle
         <span className="text-slate-500">Best {stats.longestStreak}</span>
         <span className="text-slate-500">{Math.round(stats.completionRate30 * 100)}% · 30 days</span>
         {!todayScheduled && <span className="text-xs text-slate-400">Rest day</span>}
+        {habit.jointStreak !== null && (
+          <span className="font-semibold text-slate-700" aria-label={`Joint streak: ${habit.jointStreak} days`}>
+            🤝 {habit.jointStreak}
+          </span>
+        )}
+        {others.length > 0 && (
+          <span className="ml-auto">
+            <MemberAvatars members={others} color={habit.color} />
+          </span>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end justify-between gap-2">

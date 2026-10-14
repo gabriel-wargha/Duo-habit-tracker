@@ -1,11 +1,11 @@
-@HabitTracker.Api_HostAddress = http://localhost:5080
+@baseUrl = http://localhost:5080
 
 ### Health check
-GET {{HabitTracker.Api_HostAddress}}/api/health
+GET {{baseUrl}}/api/health
 Accept: application/json
 
 ### Register (201 the first time, 409 if you run it again; 429 after 10 sign-ups in an hour)
-POST {{HabitTracker.Api_HostAddress}}/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -15,7 +15,7 @@ Content-Type: application/json
 }
 
 ### Register with bad input (400 with validation errors)
-POST {{HabitTracker.Api_HostAddress}}/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -26,7 +26,7 @@ Content-Type: application/json
 
 ### Login – copy "token" from the response into @token below
 # @name login
-POST {{HabitTracker.Api_HostAddress}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -36,7 +36,7 @@ Content-Type: application/json
 
 ### Login with a wrong password (401). Run it 6 times in a minute → 429.
 # An email with no account also gets 401, with the same message and about the same response time.
-POST {{HabitTracker.Api_HostAddress}}/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -48,20 +48,20 @@ Content-Type: application/json
 @token = paste-your-token-here
 
 ### Me with the token (200 + your user)
-GET {{HabitTracker.Api_HostAddress}}/api/auth/me
+GET {{baseUrl}}/api/auth/me
 Authorization: Bearer {{token}}
 
 ### Me without a token (401)
-GET {{HabitTracker.Api_HostAddress}}/api/auth/me
+GET {{baseUrl}}/api/auth/me
 
 ### ----- Habits (all need @token from a login above) -----
 
 ### List my active habits
-GET {{HabitTracker.Api_HostAddress}}/api/habits
+GET {{baseUrl}}/api/habits
 Authorization: Bearer {{token}}
 
 ### Create a habit (scheduleDays 62 = Mon–Fri, see frontend/src/utils/schedule.ts)
-POST {{HabitTracker.Api_HostAddress}}/api/habits
+POST {{baseUrl}}/api/habits
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -74,7 +74,7 @@ Content-Type: application/json
 }
 
 ### Create with bad input (400: name, color and scheduleDays errors)
-POST {{HabitTracker.Api_HostAddress}}/api/habits
+POST {{baseUrl}}/api/habits
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -88,8 +88,12 @@ Content-Type: application/json
 ###
 @habitId = paste-a-habit-id-here
 
+### Habit detail: every member's last 30 days, their streaks and the joint ("together") streak
+GET {{baseUrl}}/api/habits/{{habitId}}?today=2026-10-14
+Authorization: Bearer {{token}}
+
 ### Update a habit (PUT sends the whole habit)
-PUT {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}
+PUT {{baseUrl}}/api/habits/{{habitId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -102,47 +106,47 @@ Content-Type: application/json
 }
 
 ### Archive a habit (204; it disappears from the list but stays in the database)
-DELETE {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}
+DELETE {{baseUrl}}/api/habits/{{habitId}}
 Authorization: Bearer {{token}}
 
 ### ----- Check-ins (any member, for themselves) -----
 # Use your local date for both the day and ?today=. PUT and DELETE are idempotent: run them twice, same result.
 
 ### Check in for a day (204)
-PUT {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/checkins/2026-10-13?today=2026-10-13
+PUT {{baseUrl}}/api/habits/{{habitId}}/checkins/2026-10-13?today=2026-10-13
 Authorization: Bearer {{token}}
 
 ### Undo a check-in (204, even if there was none)
-DELETE {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/checkins/2026-10-13
+DELETE {{baseUrl}}/api/habits/{{habitId}}/checkins/2026-10-13
 Authorization: Bearer {{token}}
 
 ### A future day (400)
-PUT {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/checkins/2099-01-01?today=2026-10-13
+PUT {{baseUrl}}/api/habits/{{habitId}}/checkins/2099-01-01?today=2026-10-13
 Authorization: Bearer {{token}}
 
 ### Habits with stats (streaks, 30-day rate, last 7 days) for your local today
-GET {{HabitTracker.Api_HostAddress}}/api/habits?today=2026-10-13
+GET {{baseUrl}}/api/habits?today=2026-10-13
 Authorization: Bearer {{token}}
 
 ### ----- Sharing: invites and partners -----
 
 ### Create an invite (owner only; 409 if the habit already has a partner). Copy "code" below.
-POST {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/invites
+POST {{baseUrl}}/api/habits/{{habitId}}/invites
 Authorization: Bearer {{token}}
 
 ###
 @inviteCode = paste-an-invite-code-here
 
 ### Preview an invite (works without a token; 410 if expired or used)
-GET {{HabitTracker.Api_HostAddress}}/api/invites/{{inviteCode}}
+GET {{baseUrl}}/api/invites/{{inviteCode}}
 
 ### Accept an invite (log in as a *different* user first and use their token)
-POST {{HabitTracker.Api_HostAddress}}/api/invites/{{inviteCode}}/accept
+POST {{baseUrl}}/api/invites/{{inviteCode}}/accept
 Authorization: Bearer {{token}}
 
 ###
 @memberUserId = paste-a-user-id-here
 
 ### Remove a partner (owner) or leave (your own user id)
-DELETE {{HabitTracker.Api_HostAddress}}/api/habits/{{habitId}}/members/{{memberUserId}}
+DELETE {{baseUrl}}/api/habits/{{habitId}}/members/{{memberUserId}}
 Authorization: Bearer {{token}}

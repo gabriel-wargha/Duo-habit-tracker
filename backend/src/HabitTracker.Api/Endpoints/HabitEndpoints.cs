@@ -39,31 +39,51 @@ public static class HabitEndpoints
             .OrderBy(m => m.Habit.CreatedAtUtc)
             .ToListAsync();
 
-        // One query each for all check-ins and all members of these habits,
-        // instead of one query per habit (the "N+1" problem).
-        var habitIds = memberships.Select(m => m.HabitId).ToList();
-        var checkIns = await LoadCheckIns(db, userId, habitIds);
-        var members = await LoadMembers(db, habitIds);
+        // Two queries for all members and all check-ins of these habits together,
+        // instead of two queries per habit (the "N+1" problem).
         var localToday = LocalDate.Resolve(today);
+        var progress = await LoadProgress(db, memberships.Select(m => m.Habit).ToList(), localToday);
 
-        return Results.Ok(memberships.Select(m => ToResponse(m.Habit, m.Role, checkIns, members, localToday)));
+        return Results.Ok(memberships.Select(m => ToResponse(m.Habit, m.Role, userId, progress[m.HabitId], localToday)));
     }
 
-    // GET /api/habits/{id}
+    // GET /api/habits/{id} – the card data plus every member's last 30 days, side by side,
+    // and the "together" row.
     private static async Task<IResult> GetHabit(Guid id, DateOnly? today, ClaimsPrincipal principal, AppDbContext db)
     {
         var userId = principal.GetUserId();
         var membership = await FindMembership(db, id, userId);
         if (membership is null) return HabitNotFound();
 
-        var checkIns = await LoadCheckIns(db, userId, [id]);
-        var members = await LoadMembers(db, [id]);
-        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, members, LocalDate.Resolve(today)));
+        var habit = membership.Habit;
+        var localToday = LocalDate.Resolve(today);
+        var progress = (await LoadProgress(db, [habit], localToday))[habit.Id];
+        const int days = StreakCalculator.CompletionWindowDays; // the same 30 days as the completion rate
+
+        var rows = progress
+            .Select(p => new MemberProgressResponse(
+                p.Member.UserId, p.Member.DisplayName, p.Member.Role, p.Days.StartDate, p.Stats,
+                StreakCalculator.LastDays(days, habit.ScheduleDays, p.Days.StartDate, p.Days.CheckIns, localToday)))
+            .ToList();
+
+        JointProgressResponse? joint = null;
+        if (progress.Count > 1)
+        {
+            var together = StreakCalculator.Joint(progress.Select(p => p.Days).ToList());
+            joint = new JointProgressResponse(
+                together.StartDate,
+                StreakCalculator.Calculate(habit.ScheduleDays, together.StartDate, together.CheckIns, localToday),
+                StreakCalculator.LastDays(days, habit.ScheduleDays, together.StartDate, together.CheckIns, localToday));
+        }
+
+        return Results.Ok(new HabitDetailResponse(
+            ToResponse(habit, membership.Role, userId, progress, localToday), rows, joint));
     }
 
     // POST /api/habits
     private static async Task<IResult> CreateHabit(HabitRequest request, DateOnly? today, ClaimsPrincipal principal, AppDbContext db)
     {
+        var userId = principal.GetUserId();
         var localToday = LocalDate.Resolve(today);
         var habit = new Habit
         {
@@ -74,13 +94,12 @@ public static class HabitEndpoints
 
         // There's no OwnerId on Habit: the creator becomes the member with the Owner role.
         // Adding both in one SaveChanges means one transaction: we never get a habit without an owner.
-        habit.Members.Add(new HabitMember { UserId = principal.GetUserId(), Role = HabitRole.Owner });
+        habit.Members.Add(new HabitMember { UserId = userId, Role = HabitRole.Owner });
         db.Habits.Add(habit);
         await db.SaveChangesAsync();
 
-        // A brand-new habit has no check-ins yet, and only one member: the creator.
-        var members = await LoadMembers(db, [habit.Id]);
-        return Results.Created($"/api/habits/{habit.Id}", ToResponse(habit, HabitRole.Owner, [], members, localToday));
+        var progress = await LoadProgress(db, [habit], localToday);
+        return Results.Created($"/api/habits/{habit.Id}", ToResponse(habit, HabitRole.Owner, userId, progress[habit.Id], localToday));
     }
 
     // PUT /api/habits/{id}
@@ -95,9 +114,9 @@ public static class HabitEndpoints
         if (request.StartDate is { } startDate) membership.Habit.StartDate = startDate;
         await db.SaveChangesAsync();
 
-        var checkIns = await LoadCheckIns(db, userId, [id]);
-        var members = await LoadMembers(db, [id]);
-        return Results.Ok(ToResponse(membership.Habit, membership.Role, checkIns, members, LocalDate.Resolve(today)));
+        var localToday = LocalDate.Resolve(today);
+        var progress = await LoadProgress(db, [membership.Habit], localToday);
+        return Results.Ok(ToResponse(membership.Habit, membership.Role, userId, progress[id], localToday));
     }
 
     // DELETE /api/habits/{id} – archives (soft-deletes) instead of removing the row,
@@ -135,48 +154,65 @@ public static class HabitEndpoints
         habit.ScheduleDays = request.ScheduleDays;
     }
 
-    // The user's check-in dates per habit. Only the current user's: partners' check-ins come in block 9.
-    private static async Task<Dictionary<Guid, HashSet<DateOnly>>> LoadCheckIns(AppDbContext db, Guid userId, List<Guid> habitIds)
-    {
-        var rows = await db.CheckIns
-            .Where(c => c.UserId == userId && habitIds.Contains(c.HabitId))
-            .Select(c => new { c.HabitId, c.Date })
-            .ToListAsync();
+    private sealed record MemberRow(Guid HabitId, Guid UserId, string DisplayName, HabitRole Role, DateTime JoinedAtUtc);
 
-        return rows
-            .GroupBy(r => r.HabitId)
-            .ToDictionary(g => g.Key, g => g.Select(r => r.Date).ToHashSet());
-    }
+    // One member of one habit: who they are, their days, and their stats.
+    private sealed record MemberProgress(MemberRow Member, MemberDays Days, HabitStats Stats);
 
-    // Everyone in each habit, owner first, then partners in the order they joined.
-    private static async Task<Dictionary<Guid, List<MemberResponse>>> LoadMembers(AppDbContext db, List<Guid> habitIds)
+    // Every member's progress in each habit (owner first, then partners in the order they joined).
+    // Two queries no matter how many habits: all members, then all their check-ins.
+    // Each uses a projection (Select) so only the columns we need come back, not whole entities.
+    private static async Task<Dictionary<Guid, List<MemberProgress>>> LoadProgress(AppDbContext db, List<Habit> habits, DateOnly today)
     {
-        var rows = await db.HabitMembers
+        var habitIds = habits.Select(h => h.Id).ToList();
+
+        var members = await db.HabitMembers
             .Where(m => habitIds.Contains(m.HabitId))
             .OrderBy(m => m.Role == HabitRole.Owner ? 0 : 1)
             .ThenBy(m => m.JoinedAtUtc)
-            .Select(m => new { m.HabitId, Member = new MemberResponse(m.UserId, m.User.DisplayName, m.Role) })
+            .Select(m => new MemberRow(m.HabitId, m.UserId, m.User.DisplayName, m.Role, m.JoinedAtUtc))
             .ToListAsync();
 
-        return rows
-            .GroupBy(r => r.HabitId)
-            .ToDictionary(g => g.Key, g => g.Select(r => r.Member).ToList());
+        var checkIns = (await db.CheckIns
+                .Where(c => habitIds.Contains(c.HabitId))
+                .Select(c => new { c.HabitId, c.UserId, c.Date })
+                .ToListAsync())
+            .GroupBy(c => (c.HabitId, c.UserId))
+            .ToDictionary(g => g.Key, g => g.Select(c => c.Date).ToHashSet());
+
+        // From here on it's all in memory: group, then let the pure calculator do the math.
+        var membersByHabit = members.ToLookup(m => m.HabitId);
+        return habits.ToDictionary(h => h.Id, h => membersByHabit[h.Id]
+            .Select(m =>
+            {
+                var dates = checkIns.GetValueOrDefault((h.Id, m.UserId)) ?? [];
+                var start = StreakCalculator.MemberStartDate(
+                    h.StartDate, m.Role == HabitRole.Owner, DateOnly.FromDateTime(m.JoinedAtUtc), dates);
+                var stats = StreakCalculator.Calculate(h.ScheduleDays, start, dates, today);
+                return new MemberProgress(m, new MemberDays(start, dates), stats);
+            })
+            .ToList());
     }
 
-    private static HabitResponse ToResponse(
-        Habit habit,
-        HabitRole role,
-        Dictionary<Guid, HashSet<DateOnly>> checkIns,
-        Dictionary<Guid, List<MemberResponse>> members,
-        DateOnly today)
+    private static HabitResponse ToResponse(Habit habit, HabitRole role, Guid userId, List<MemberProgress> progress, DateOnly today)
     {
-        var dates = checkIns.GetValueOrDefault(habit.Id) ?? [];
-        var stats = StreakCalculator.Calculate(habit.ScheduleDays, habit.StartDate, dates, today);
+        // The card's stats are the caller's own.
+        var mine = progress.Single(p => p.Member.UserId == userId);
+
+        int? jointStreak = null;
+        if (progress.Count > 1)
+        {
+            var together = StreakCalculator.Joint(progress.Select(p => p.Days).ToList());
+            jointStreak = StreakCalculator.Calculate(habit.ScheduleDays, together.StartDate, together.CheckIns, today).CurrentStreak;
+        }
 
         return new HabitResponse(
             habit.Id, habit.Name, habit.Description, habit.Emoji, habit.Color,
-            habit.ScheduleDays, habit.StartDate, habit.IsArchived, role, habit.CreatedAtUtc, stats,
-            members.GetValueOrDefault(habit.Id) ?? []);
+            habit.ScheduleDays, habit.StartDate, habit.IsArchived, role, habit.CreatedAtUtc, mine.Stats,
+            progress
+                .Select(p => new MemberResponse(p.Member.UserId, p.Member.DisplayName, p.Member.Role, p.Stats.DoneToday, p.Stats.CurrentStreak))
+                .ToList(),
+            jointStreak);
     }
 
     // Non-members get 404, not 403: a 403 would confirm that a habit with this id exists.

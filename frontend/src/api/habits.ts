@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { localToday } from '../utils/dates'
 import { request } from './client'
-import type { Habit, HabitRequest } from './types'
+import type { Habit, HabitDetail, HabitRequest } from './types'
 
 // ----- Plain API calls -----
 // `today` is the user's local date: the server needs it to calculate streaks.
 export const habitsApi = {
   list: (today: string) => request<Habit[]>(`/habits?today=${today}`),
+  get: (id: string, today: string) => request<HabitDetail>(`/habits/${id}?today=${today}`),
   create: (body: HabitRequest) => request<Habit>('/habits', { method: 'POST', body }),
   update: (id: string, body: HabitRequest) => request<Habit>(`/habits/${id}`, { method: 'PUT', body }),
   archive: (id: string) => request<void>(`/habits/${id}`, { method: 'DELETE' }),
@@ -18,11 +19,21 @@ export const habitsApi = {
 // ----- TanStack Query hooks -----
 // A query key names a piece of cached data. The list's key includes the date, so after midnight
 // it's a different cache entry and streaks are recalculated for the new day.
-// Invalidating ['habits'] marks *every* key that starts with it as stale (a prefix match).
+// Invalidating ['habits'] marks *every* key that starts with it as stale (a prefix match):
+// the lists and the detail pages. 'list' and 'detail' keep the two shapes apart, so code that
+// edits cached lists (the optimistic check-in) can target only ['habits', 'list'].
 export const habitKeys = {
   all: ['habits'] as const,
-  list: (today: string) => ['habits', today] as const,
+  lists: ['habits', 'list'] as const,
+  list: (today: string) => ['habits', 'list', today] as const,
+  detail: (id: string, today: string) => ['habits', 'detail', id, today] as const,
 }
+
+// Polling: a partner's check-in happens on *their* phone, so nothing tells our browser about it.
+// We ask again every 30 seconds while the page is visible (TanStack Query pauses the timer
+// in background tabs), and right away when you come back to the tab (refetchOnWindowFocus).
+// Block 11 replaces this with SignalR, where the server pushes changes instantly.
+const POLL_INTERVAL_MS = 30_000
 
 // Query = reading data. TanStack Query fetches it, caches it, and gives us
 // isPending / isError / data, so components don't need their own useEffect + useState.
@@ -31,6 +42,18 @@ export function useHabits() {
   return useQuery({
     queryKey: habitKeys.list(today),
     queryFn: () => habitsApi.list(today),
+    refetchInterval: POLL_INTERVAL_MS,
+    refetchOnWindowFocus: true, // the default, written out because we rely on it
+  })
+}
+
+export function useHabitDetail(id: string) {
+  const today = localToday()
+  return useQuery({
+    queryKey: habitKeys.detail(id, today),
+    queryFn: () => habitsApi.get(id, today),
+    refetchInterval: POLL_INTERVAL_MS,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -102,10 +125,11 @@ export function useToggleTodayCheckIn() {
       await queryClient.cancelQueries({ queryKey: habitKeys.all })
 
       // Keep a snapshot so we can roll back if the server says no.
-      const previous = queryClient.getQueriesData<Habit[]>({ queryKey: habitKeys.all })
+      // Only the lists: the detail page just waits for the refetch in onSettled.
+      const previous = queryClient.getQueriesData<Habit[]>({ queryKey: habitKeys.lists })
 
       const today = localToday()
-      queryClient.setQueriesData<Habit[]>({ queryKey: habitKeys.all }, (habits) =>
+      queryClient.setQueriesData<Habit[]>({ queryKey: habitKeys.lists }, (habits) =>
         habits?.map((h) => (h.id === habitId ? withTodayCheckIn(h, today, done) : h)),
       )
 

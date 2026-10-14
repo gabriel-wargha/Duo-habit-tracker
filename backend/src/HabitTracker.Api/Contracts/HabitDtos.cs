@@ -32,6 +32,28 @@ public record HabitResponse(
     // Streaks, completion rate and the last 7 days, for the current user (Services/StreakCalculator.cs).
     HabitStats Stats,
     // Everyone tracking this habit, owner first.
-    IReadOnlyList<MemberResponse> Members);
+    IReadOnlyList<MemberResponse> Members,
+    // Days in a row that *every* member completed. Null when you track it alone.
+    int? JointStreak);
 
-public record MemberResponse(Guid UserId, string DisplayName, HabitRole Role);
+// DoneToday and CurrentStreak let the dashboard show a ✅ on a partner's avatar.
+public record MemberResponse(Guid UserId, string DisplayName, HabitRole Role, bool DoneToday, int CurrentStreak);
+
+// GET /api/habits/{id}: the card data plus everyone's progress side by side.
+public record HabitDetailResponse(
+    HabitResponse Habit,
+    // One row per member, owner first.
+    IReadOnlyList<MemberProgressResponse> Progress,
+    // The "together" row. Null when you track it alone.
+    JointProgressResponse? Joint);
+
+public record MemberProgressResponse(
+    Guid UserId,
+    string DisplayName,
+    HabitRole Role,
+    // When this member's stats start: the habit's start for the owner, the join day for a partner.
+    DateOnly StartDate,
+    HabitStats Stats,
+    IReadOnlyList<DayStatus> Last30Days);
+
+public record JointProgressResponse(DateOnly StartDate, HabitStats Stats, IReadOnlyList<DayStatus> Last30Days);

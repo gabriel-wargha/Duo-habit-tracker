@@ -182,4 +182,101 @@ public class StreakCalculatorTests
         Assert.Equal(0, stats.CompletionRate30);
         Assert.All(stats.Last7Days, d => Assert.False(d.IsScheduled));
     }
+
+    // ----- Tracking together -----
+
+    [Fact]
+    public void Owner_stats_start_at_the_habit_start()
+    {
+        var start = StreakCalculator.MemberStartDate(Oct(1), isOwner: true, joinedOn: Oct(10), Done(11));
+
+        Assert.Equal(Oct(1), start);
+    }
+
+    [Fact]
+    public void Partner_stats_start_on_the_day_they_joined()
+    {
+        // The habit started Oct 1, but the partner only joined on the 10th:
+        // Oct 1–9 weren't "missed", they just weren't there yet.
+        var start = StreakCalculator.MemberStartDate(Oct(1), isOwner: false, joinedOn: Oct(10), Done(11));
+
+        Assert.Equal(Oct(10), start);
+    }
+
+    [Fact]
+    public void Partner_check_in_before_the_UTC_join_day_still_counts()
+    {
+        // Joined late on the 9th in their time zone, which was already the 10th in UTC,
+        // and checked in on the 9th. That check-in shouldn't be ignored.
+        var start = StreakCalculator.MemberStartDate(Oct(1), isOwner: false, joinedOn: Oct(10), Done(9, 11));
+
+        Assert.Equal(Oct(9), start);
+    }
+
+    [Fact]
+    public void Partner_start_is_never_before_the_habit_start()
+    {
+        var start = StreakCalculator.MemberStartDate(Oct(5), isOwner: false, joinedOn: Oct(3), Done());
+
+        Assert.Equal(Oct(5), start);
+    }
+
+    [Fact]
+    public void Joint_days_are_the_days_everyone_checked_in()
+    {
+        var you = new MemberDays(Oct(1), Done(10, 11, 12, 13));
+        var partner = new MemberDays(Oct(1), Done(11, 13));
+
+        var together = StreakCalculator.Joint([you, partner]);
+
+        Assert.Equal(Done(11, 13), together.CheckIns);
+    }
+
+    [Fact]
+    public void Joint_starts_when_the_last_member_started()
+    {
+        var owner = new MemberDays(Oct(1), Done());
+        var partner = new MemberDays(Oct(8), Done());
+
+        Assert.Equal(Oct(8), StreakCalculator.Joint([owner, partner]).StartDate);
+    }
+
+    [Fact]
+    public void Joint_streak_breaks_when_either_member_misses_a_day()
+    {
+        // You did every day from the 8th. Your partner (joined the 8th) skipped Sat 10.
+        var you = new MemberDays(Oct(1), Done(8, 9, 10, 11, 12, 13));
+        var partner = new MemberDays(Oct(8), Done(8, 9, 11, 12, 13));
+
+        var together = StreakCalculator.Joint([you, partner]);
+        var stats = StreakCalculator.Calculate(EveryDay, together.StartDate, together.CheckIns, Today);
+
+        Assert.Equal(3, stats.CurrentStreak); // 11, 12, 13
+        Assert.Equal(3, stats.LongestStreak);
+    }
+
+    [Fact]
+    public void Joint_today_stays_open_until_everyone_is_done()
+    {
+        // Both did 11 and 12. Today only you are done: the joint streak is 2, not broken.
+        var you = new MemberDays(Oct(1), Done(11, 12, 13));
+        var partner = new MemberDays(Oct(1), Done(11, 12));
+
+        var together = StreakCalculator.Joint([you, partner]);
+        var stats = StreakCalculator.Calculate(EveryDay, together.StartDate, together.CheckIns, Today);
+
+        Assert.Equal(2, stats.CurrentStreak);
+        Assert.False(stats.DoneToday);
+    }
+
+    [Fact]
+    public void Last_days_returns_the_requested_number_ending_today()
+    {
+        var days = StreakCalculator.LastDays(30, EveryDay, Oct(1), Done(13), Today);
+
+        Assert.Equal(30, days.Count);
+        Assert.Equal(Today, days[^1].Date);
+        Assert.True(days[^1].IsDone);
+        Assert.False(days[0].IsScheduled); // Sep 14, before the start date
+    }
 }

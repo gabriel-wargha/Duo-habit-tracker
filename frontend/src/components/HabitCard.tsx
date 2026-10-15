@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
-import { Archive, Check, Ellipsis, Flame, LogOut, Moon, Pencil, Trophy, UserPlus, Users } from 'lucide-react'
+import { Archive, Check, Ellipsis, Flame, LogOut, Moon, Pencil, UserPlus, Users } from 'lucide-react'
 import type { Habit } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import {
@@ -111,10 +111,6 @@ export function HabitCard({ habit, onEdit, onArchive, onShare, onLeave, onToggle
         >
           <Flame className="size-4" aria-hidden="true" />
           {stats.currentStreak}
-        </span>
-        <span className="flex items-center gap-1 text-muted-foreground" aria-label={`Best streak: ${stats.longestStreak} days`}>
-          <Trophy className="size-3.5" aria-hidden="true" />
-          {stats.longestStreak}
         </span>
         <Tooltip>
           <TooltipTrigger asChild>

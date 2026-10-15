@@ -1,4 +1,4 @@
-import { Flame, Trophy } from 'lucide-react'
+import { Flame } from 'lucide-react'
 import type { DayStatus, HabitStats } from '../api/types'
 import { cn } from '@/lib/utils'
 import { dayLabel, dotAppearance } from '../utils/days'
@@ -31,10 +31,6 @@ export function MemberProgress({ name, note, stats, days, color, highlight = fal
           >
             <Flame className="size-3.5" aria-hidden="true" />
             {stats.currentStreak}
-          </span>
-          <span className="flex items-center gap-1 text-muted-foreground" aria-label={`Best streak: ${stats.longestStreak} days`}>
-            <Trophy className="size-3.5" aria-hidden="true" />
-            {stats.longestStreak}
           </span>
           <span className="text-muted-foreground">{Math.round(stats.completionRate30 * 100)}%</span>
         </p>

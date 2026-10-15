@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { ArrowLeft, Check, Flame, Trophy, Users } from 'lucide-react'
+import { ArrowLeft, Check, Flame, Users } from 'lucide-react'
 import { ApiError } from '../api/client'
 import { useHabitDetail, useToggleTodayCheckIn } from '../api/habits'
 import { useAuth } from '../auth/useAuth'
@@ -84,26 +84,20 @@ export function HabitDetailPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Three cards for a shared habit (with "Together"), two for a solo one. */}
+      <div className={cn('grid gap-4', joint ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
         <StatCard
           icon={<Flame className="size-4 text-orange-600" />}
           label="Your streak"
           value={habit.stats.currentStreak}
           hint={`Best ${habit.stats.longestStreak}`}
         />
-        {joint ? (
+        {joint && (
           <StatCard
             icon={<Users className="size-4" />}
             label="Together"
             value={joint.stats.currentStreak}
             hint={joint.stats.doneToday ? 'Everyone is done today' : 'Not everyone is done today'}
-          />
-        ) : (
-          <StatCard
-            icon={<Trophy className="size-4 text-amber-500" />}
-            label="Best streak"
-            value={habit.stats.longestStreak}
-            hint="Your record"
           />
         )}
         <StatCard

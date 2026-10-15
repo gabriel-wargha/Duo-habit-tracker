@@ -48,6 +48,13 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler
 }
 
+// ----- Where the API lives -----
+// Locally VITE_API_URL is unset, so this is "" and requests go to /api on the same origin (Vite's proxy).
+// In production it's the API's own address, like https://habit-api.azurewebsites.net.
+// VITE_ variables are baked into the JavaScript at build time (npm run build), so this is public
+// information, never a secret.
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '') // drop a trailing slash
+
 // ----- The one function every request goes through -----
 // Exported so feature files (like api/habits.ts) can define their own typed endpoints.
 export async function request<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
@@ -58,8 +65,8 @@ export async function request<T>(path: string, options: { method?: string; body?
 
   let response: Response
   try {
-    // Relative URL: in development Vite's proxy forwards /api to the .NET API.
-    response = await fetch(`/api${path}`, {
+    // In development API_BASE is "", so this is the relative URL /api/..., which Vite's proxy forwards.
+    response = await fetch(`${API_BASE}/api${path}`, {
       method: options.method ?? 'GET',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),

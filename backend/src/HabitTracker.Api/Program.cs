@@ -5,6 +5,7 @@ using HabitTracker.Api.Domain;
 using HabitTracker.Api.Endpoints;
 using HabitTracker.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -105,6 +106,32 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// --- CORS: which *other* websites may call this API from a browser (deploy). ---
+// Locally the browser only talks to Vite (same origin), so this list is empty and nothing changes.
+// Online, the frontend (https://….azurestaticapps.net) and the API (https://….azurewebsites.net)
+// are different origins, and the browser blocks the call unless the API says that origin is allowed.
+// Set it in Azure as the app setting Cors__AllowedOrigins (several origins: separate with commas).
+var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "")
+    .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+    // Any header (we send Authorization and Content-Type) and any method (GET, POST, PUT, DELETE).
+    // No AllowCredentials: we send the JWT in a header, not in a cookie.
+    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+
+// --- Forwarded headers: the real visitor behind Azure's proxy (deploy). ---
+// On Azure, requests reach us through Azure's front-end proxy, so the connection's IP is the proxy's.
+// The proxy puts the visitor's real IP in X-Forwarded-For (and "https" in X-Forwarded-Proto).
+// Without reading them, every visitor would share ONE login rate limit: 5 attempts per minute for everyone.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Azure's proxy has no fixed address we could list, so we accept forwarded headers from any proxy.
+    // That's safe here because ForwardLimit stays 1: only the LAST entry is used, the one Azure's proxy
+    // appended. A visitor who sends a fake X-Forwarded-For only adds entries in front of it.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 // ----- Demo data (block 10) -----
@@ -120,10 +147,20 @@ if (app.Configuration.GetValue<bool>("Demo:Seed"))
 }
 
 // ----- 2. Middleware pipeline: every request passes through these, in order -----
+// First, so everything after it (HTTPS redirection, rate limiting, logs) sees the real IP and scheme.
+app.UseForwardedHeaders();
+
 if (app.Environment.IsDevelopment())
 {
     // The API description at /openapi/v1.json, only in Development.
     app.MapOpenApi();
+}
+
+if (!app.Environment.IsDevelopment())
+{
+    // HSTS: tells browsers "only ever use HTTPS for this site" for the next 30 days (the default),
+    // so even a typed http:// link can't be intercepted. Not in Development: localhost uses plain http.
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
@@ -138,6 +175,10 @@ app.UseExceptionHandler(new ExceptionHandlerOptions
         : StatusCodes.Status500InternalServerError,
 });
 app.UseStatusCodePages();
+
+// CORS answers the browser's "may I?" check (the preflight OPTIONS request) before anything else
+// runs, and adds the "allowed" headers to every response, including errors like 401 and 429.
+app.UseCors();
 
 // Order matters: first find out who the caller is, then check what they may do.
 app.UseAuthentication();

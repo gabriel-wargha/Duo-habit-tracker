@@ -5,7 +5,8 @@ public class Habit
     public Guid Id { get; set; }
     public required string Name { get; set; }
     public string? Description { get; set; }
-    public string Emoji { get; set; } = "✅";
+    // A Lucide icon name like "book-open" (the frontend maps it to an icon component).
+    public string Icon { get; set; } = "circle-check";
 
     // Hex color like "#22c55e".
     public string Color { get; set; } = "#22c55e";

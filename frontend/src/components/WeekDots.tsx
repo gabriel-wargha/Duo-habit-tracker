@@ -1,4 +1,5 @@
 import type { DayStatus } from '../api/types'
+import { cn } from '@/lib/utils'
 import { dayLabel, dotAppearance, parseLocalDate } from '../utils/days'
 
 type WeekDotsProps = {
@@ -19,12 +20,12 @@ export function WeekDots({ days, color }: WeekDotsProps) {
         const dot = dotAppearance(day, isToday, color)
 
         return (
-          <li key={day.date} className="flex flex-col items-center gap-0.5" title={label}>
+          <li key={day.date} className="flex flex-col items-center gap-1" title={label}>
             <span className="sr-only">{label}</span>
-            <span aria-hidden="true" style={dot.style} className={`h-5 w-5 rounded-full ${dot.className}`} />
+            <span aria-hidden="true" style={dot.style} className={cn('size-4 rounded-full', dot.className)} />
             <span
               aria-hidden="true"
-              className={`text-[10px] ${isToday ? 'font-bold text-slate-700' : 'text-slate-500'}`}
+              className={cn('text-[10px] leading-none', isToday ? 'font-semibold text-foreground' : 'text-muted-foreground')}
             >
               {LETTERS[parseLocalDate(day.date).getDay()]}
             </span>

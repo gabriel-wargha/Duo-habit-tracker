@@ -29,7 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             habit.Property(h => h.Name).HasMaxLength(100);
             habit.Property(h => h.Description).HasMaxLength(500);
-            habit.Property(h => h.Emoji).HasMaxLength(16);
+            habit.Property(h => h.Icon).HasMaxLength(32);
             habit.Property(h => h.Color).HasMaxLength(7);
         });
 

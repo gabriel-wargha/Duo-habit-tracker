@@ -8,7 +8,8 @@ namespace HabitTracker.Api.Contracts;
 public record HabitRequest(
     [property: Required, MaxLength(100)] string Name,
     [property: MaxLength(500)] string? Description,
-    [property: Required, MaxLength(16)] string Emoji,
+    // A Lucide icon name: lowercase letters, digits and dashes, like "book-open".
+    [property: Required, RegularExpression("^[a-z0-9-]{1,32}$", ErrorMessage = "Pick an icon.")] string Icon,
     // A hex color like "#22c55e". The regex keeps anything else (like CSS injection) out.
     [property: Required, RegularExpression("^#[0-9a-fA-F]{6}$", ErrorMessage = "Color must be a hex color like #22c55e.")] string Color,
     // Weekday bitmask: 1 = Sunday, 2 = Monday, 4 = Tuesday ... 64 = Saturday. 127 = every day.
@@ -21,7 +22,7 @@ public record HabitResponse(
     Guid Id,
     string Name,
     string? Description,
-    string Emoji,
+    string Icon,
     string Color,
     int ScheduleDays,
     DateOnly StartDate,

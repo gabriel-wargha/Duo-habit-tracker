@@ -43,21 +43,21 @@ public static class Seed
         var random = new Random(2026);
 
         // Shared with Sam: shows partner avatars, the joint streak and side-by-side rows.
-        var run = AddHabit(db, demo, "Morning run", "🏃", "#f97316", MonWedFri, today.AddDays(-83), "3 km before work");
+        var run = AddHabit(db, demo, "Morning run", "footprints", "#f97316", MonWedFri, today.AddDays(-83), "3 km before work");
         Join(run, sam, today.AddDays(-56));
         Track(db, run, demo, run.StartDate, today, random, rate: 0.7, recentStreak: 4, doneToday: false);
         Track(db, run, sam, today.AddDays(-56), today, random, rate: 0.8, recentStreak: 4, doneToday: true);
 
-        var water = AddHabit(db, demo, "Drink 2 L of water", "💧", "#06b6d4", EveryDay, today.AddDays(-40), null);
+        var water = AddHabit(db, demo, "Drink 2 L of water", "droplet", "#06b6d4", EveryDay, today.AddDays(-40), null);
         Join(water, sam, today.AddDays(-20));
         Track(db, water, demo, water.StartDate, today, random, rate: 0.9, recentStreak: 6, doneToday: false);
         Track(db, water, sam, today.AddDays(-20), today, random, rate: 0.9, recentStreak: 6, doneToday: true);
 
         // Solo habits: a strong one and one that's still a struggle (real data isn't perfect).
-        var read = AddHabit(db, demo, "Read 20 pages", "📚", "#3b82f6", EveryDay, today.AddDays(-83), "Before bed");
+        var read = AddHabit(db, demo, "Read 20 pages", "book-open", "#3b82f6", EveryDay, today.AddDays(-83), "Before bed");
         Track(db, read, demo, read.StartDate, today, random, rate: 0.75, recentStreak: 9, doneToday: true);
 
-        var meditate = AddHabit(db, demo, "Meditate 10 min", "🧘", "#a855f7", Weekdays, today.AddDays(-40), null);
+        var meditate = AddHabit(db, demo, "Meditate 10 min", "brain", "#a855f7", Weekdays, today.AddDays(-40), null);
         Track(db, meditate, demo, meditate.StartDate, today, random, rate: 0.5, recentStreak: 2, doneToday: false);
 
         await db.SaveChangesAsync();
@@ -79,12 +79,12 @@ public static class Seed
         return user;
     }
 
-    private static Habit AddHabit(AppDbContext db, User owner, string name, string emoji, string color, int scheduleDays, DateOnly start, string? description)
+    private static Habit AddHabit(AppDbContext db, User owner, string name, string icon, string color, int scheduleDays, DateOnly start, string? description)
     {
         var habit = new Habit
         {
             Name = name,
-            Emoji = emoji,
+            Icon = icon,
             Color = color,
             ScheduleDays = scheduleDays,
             StartDate = start,

@@ -67,7 +67,7 @@ Content-Type: application/json
 
 {
   "name": "Read 10 pages",
-  "emoji": "📚",
+  "icon": "book-open",
   "color": "#3b82f6",
   "scheduleDays": 62,
   "startDate": "2026-10-13"
@@ -80,7 +80,7 @@ Content-Type: application/json
 
 {
   "name": "",
-  "emoji": "📚",
+  "icon": "book-open",
   "color": "blue",
   "scheduleDays": 0
 }
@@ -100,7 +100,7 @@ Content-Type: application/json
 {
   "name": "Read 20 pages",
   "description": "Before bed",
-  "emoji": "📖",
+  "icon": "book-open",
   "color": "#a855f7",
   "scheduleDays": 127
 }

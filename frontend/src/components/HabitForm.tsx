@@ -1,10 +1,16 @@
 import { useState, type FormEvent } from 'react'
+import { Check } from 'lucide-react'
 import { ApiError } from '../api/client'
 import type { Habit, HabitRequest } from '../api/types'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+import { DEFAULT_HABIT_ICON, HABIT_ICONS, type HabitIconKey } from '@/utils/habitIcons'
 import { EVERY_DAY, WEEKDAYS, WEEKDAYS_ONLY, isScheduledOn, toggleDay } from '../utils/schedule'
 import { FormField } from './FormField'
 
-const EMOJIS = ['✅', '📚', '🏃', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎸', '🧹', '💊']
 const COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#ef4444', '#f97316', '#eab308', '#14b8a6']
 
 type FormValues = Omit<HabitRequest, 'description' | 'startDate'> & { description: string }
@@ -24,7 +30,6 @@ function validate(values: FormValues): Errors {
   if (!values.name.trim()) errors.name = 'Name is required.'
   else if (values.name.trim().length > 100) errors.name = 'Name must be 100 characters or fewer.'
   if (values.description.length > 500) errors.description = 'Description must be 500 characters or fewer.'
-  if (!values.emoji.trim()) errors.emoji = 'Pick an emoji.'
   if (values.scheduleDays === 0) errors.scheduleDays = 'Pick at least one day.'
   return errors
 }
@@ -34,7 +39,8 @@ export function HabitForm({ habit, submitLabel, onSubmit, onCancel }: HabitFormP
   const [values, setValues] = useState<FormValues>({
     name: habit?.name ?? '',
     description: habit?.description ?? '',
-    emoji: habit?.emoji ?? EMOJIS[0],
+    // An old or unknown icon key shows up as the default, and is saved as such.
+    icon: habit && habit.icon in HABIT_ICONS ? habit.icon : DEFAULT_HABIT_ICON,
     color: habit?.color ?? COLORS[0],
     scheduleDays: habit?.scheduleDays ?? EVERY_DAY,
   })
@@ -73,9 +79,9 @@ export function HabitForm({ habit, submitLabel, onSubmit, onCancel }: HabitFormP
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
       {formError && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {formError}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
       )}
 
       <FormField
@@ -87,46 +93,53 @@ export function HabitForm({ habit, submitLabel, onSubmit, onCancel }: HabitFormP
         error={errors.name}
       />
 
-      <FormField
-        id="habit-description"
-        label="Description (optional)"
-        placeholder="Before bed, any book"
-        value={values.description}
-        onChange={(e) => set('description', e.target.value)}
-        error={errors.description}
-      />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="habit-description">
+          Description <span className="font-normal text-muted-foreground">(optional)</span>
+        </Label>
+        <Textarea
+          id="habit-description"
+          placeholder="Before bed, any book"
+          rows={2}
+          value={values.description}
+          onChange={(e) => set('description', e.target.value)}
+          aria-invalid={errors.description ? true : undefined}
+        />
+        {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+      </div>
 
       {/* fieldset + legend = a labelled group of buttons, read correctly by screen readers. */}
       <fieldset>
-        <legend className="mb-2 text-sm font-medium text-slate-700">Emoji</legend>
-        <div className="grid grid-cols-6 gap-2">
-          {EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              onClick={() => set('emoji', emoji)}
-              aria-pressed={values.emoji === emoji}
-              className={`rounded-lg border py-1.5 text-xl ${
-                values.emoji === emoji ? 'border-slate-900 bg-slate-100' : 'border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {emoji}
-            </button>
-          ))}
+        <legend className="mb-2 text-sm font-medium">Icon</legend>
+        <div className="grid grid-cols-8 gap-1.5">
+          {(Object.keys(HABIT_ICONS) as HabitIconKey[]).map((key) => {
+            const { icon: Icon, label } = HABIT_ICONS[key]
+            const selected = values.icon === key
+            return (
+              <button
+                key={key}
+                type="button"
+                title={label}
+                aria-label={label}
+                aria-pressed={selected}
+                onClick={() => set('icon', key)}
+                // The selected icon takes the habit's color, so you preview the result.
+                style={selected ? { backgroundColor: `${values.color}1f`, color: values.color, borderColor: values.color } : undefined}
+                className={cn(
+                  'flex aspect-square items-center justify-center rounded-lg border transition-colors',
+                  selected ? 'border-2' : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+              >
+                <Icon className="size-4" />
+              </button>
+            )
+          })}
         </div>
-        <input
-          aria-label="Or type any emoji"
-          placeholder="Or type any emoji"
-          maxLength={16}
-          value={EMOJIS.includes(values.emoji) ? '' : values.emoji}
-          onChange={(e) => set('emoji', e.target.value)}
-          className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        />
-        {errors.emoji && <p className="mt-1 text-sm text-red-600">{errors.emoji}</p>}
+        {errors.icon && <p className="mt-1 text-sm text-destructive">{errors.icon}</p>}
       </fieldset>
 
       <fieldset>
-        <legend className="mb-2 text-sm font-medium text-slate-700">Color</legend>
+        <legend className="mb-2 text-sm font-medium">Color</legend>
         <div className="flex flex-wrap gap-2">
           {COLORS.map((color) => (
             <button
@@ -136,17 +149,20 @@ export function HabitForm({ habit, submitLabel, onSubmit, onCancel }: HabitFormP
               aria-label={`Color ${color}`}
               aria-pressed={values.color === color}
               style={{ backgroundColor: color }}
-              className={`h-8 w-8 rounded-full ${
-                values.color === color ? 'ring-2 ring-slate-900 ring-offset-2' : ''
-              }`}
-            />
+              className={cn(
+                'flex size-7 items-center justify-center rounded-full text-white transition-transform hover:scale-110',
+                values.color === color && 'ring-2 ring-foreground ring-offset-2 ring-offset-background',
+              )}
+            >
+              {values.color === color && <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />}
+            </button>
           ))}
         </div>
-        {errors.color && <p className="mt-1 text-sm text-red-600">{errors.color}</p>}
+        {errors.color && <p className="mt-1 text-sm text-destructive">{errors.color}</p>}
       </fieldset>
 
       <fieldset>
-        <legend className="mb-2 text-sm font-medium text-slate-700">Days</legend>
+        <legend className="mb-2 text-sm font-medium">Days</legend>
         <div className="flex gap-1.5">
           {WEEKDAYS.map(({ day, short, letter }) => {
             const on = isScheduledOn(values.scheduleDays, day)
@@ -157,41 +173,34 @@ export function HabitForm({ habit, submitLabel, onSubmit, onCancel }: HabitFormP
                 onClick={() => set('scheduleDays', toggleDay(values.scheduleDays, day))}
                 aria-label={short}
                 aria-pressed={on}
-                className={`h-9 w-9 rounded-full text-sm font-medium ${
-                  on ? 'bg-slate-900 text-white' : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
-                }`}
+                className={cn(
+                  'size-9 rounded-full text-sm font-medium transition-colors',
+                  on ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:bg-muted',
+                )}
               >
                 {letter}
               </button>
             )
           })}
         </div>
-        <div className="mt-2 flex gap-3 text-xs">
-          <button type="button" className="text-slate-600 underline" onClick={() => set('scheduleDays', EVERY_DAY)}>
+        <div className="mt-2 flex gap-1">
+          <Button type="button" variant="ghost" size="xs" onClick={() => set('scheduleDays', EVERY_DAY)}>
             Every day
-          </button>
-          <button type="button" className="text-slate-600 underline" onClick={() => set('scheduleDays', WEEKDAYS_ONLY)}>
+          </Button>
+          <Button type="button" variant="ghost" size="xs" onClick={() => set('scheduleDays', WEEKDAYS_ONLY)}>
             Weekdays
-          </button>
+          </Button>
         </div>
-        {errors.scheduleDays && <p className="mt-1 text-sm text-red-600">{errors.scheduleDays}</p>}
+        {errors.scheduleDays && <p className="mt-1 text-sm text-destructive">{errors.scheduleDays}</p>}
       </fieldset>
 
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-        >
+        <Button type="button" variant="outline" size="lg" onClick={onCancel}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" size="lg" disabled={submitting}>
           {submitting ? 'Saving…' : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   )

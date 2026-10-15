@@ -39,7 +39,7 @@ export function Heatmap({ days, memberCount, color }: HeatmapProps) {
       </figcaption>
 
       <div className="flex gap-1" aria-hidden="true">
-        <div className="mt-5 grid grid-rows-7 gap-1 pr-1 text-[10px] leading-none text-slate-500">
+        <div className="mt-5 grid grid-rows-7 gap-1 pr-1 text-[10px] leading-none text-muted-foreground">
           {ROW_LABELS.map((label, i) => (
             <span key={i} className="flex h-full items-center">
               {label}
@@ -51,20 +51,20 @@ export function Heatmap({ days, memberCount, color }: HeatmapProps) {
         <div className="grid flex-1 gap-1" style={{ gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1rem))` }}>
           {weeks.map((week, w) => (
             <div key={week[0].date} className="flex flex-col gap-1">
-              <span className="h-4 text-[10px] leading-4 whitespace-nowrap text-slate-500">{monthLabels[w]}</span>
+              <span className="h-4 text-[10px] leading-4 whitespace-nowrap text-muted-foreground">{monthLabels[w]}</span>
               {week.map((day) => {
                 const date = parseLocalDate(day.date)
                 const label = `${date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}: ${describe(day, memberCount)}`
 
                 let style: CSSProperties | undefined
-                let className = 'bg-slate-100' // scheduled, nobody did it
+                let className = 'bg-muted-foreground/12' // scheduled, nobody did it
                 if (day.doneCount > 0) {
                   className = ''
                   // 1 of 2 → 55% strength, 2 of 2 → full color.
                   const strength = 0.1 + 0.9 * (day.doneCount / Math.max(memberCount, 1))
                   style = { backgroundColor: color, opacity: strength }
                 } else if (!day.isScheduled) {
-                  className = 'bg-slate-50'
+                  className = 'bg-muted/60'
                 }
 
                 return <span key={day.date} title={label} style={style} className={`aspect-square rounded-sm ${className}`} />
@@ -74,9 +74,9 @@ export function Heatmap({ days, memberCount, color }: HeatmapProps) {
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-slate-500" aria-hidden="true">
+      <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground" aria-hidden="true">
         <span>Less</span>
-        <span className="h-3 w-3 rounded-sm bg-slate-100" />
+        <span className="size-3 rounded-sm bg-muted-foreground/12" />
         {memberCount > 1 && <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: color, opacity: 0.55 }} />}
         <span className="h-3 w-3 rounded-sm" style={{ backgroundColor: color }} />
         <span>{memberCount > 1 ? 'Everyone' : 'Done'}</span>

@@ -42,7 +42,7 @@ export type Habit = {
   id: string
   name: string
   description: string | null
-  emoji: string
+  icon: string // a Lucide icon key, like "book-open" (see utils/habitIcons.ts)
   color: string // hex, like "#22c55e"
   scheduleDays: number // weekday bitmask, see utils/schedule.ts
   startDate: string // "YYYY-MM-DD", a calendar day without time zone
@@ -109,7 +109,7 @@ export type JointProgress = {
 export type HabitRequest = {
   name: string
   description: string | null
-  emoji: string
+  icon: string // a Lucide icon key, like "book-open" (see utils/habitIcons.ts)
   color: string
   scheduleDays: number
   startDate?: string
@@ -125,7 +125,7 @@ export type CreateInviteResponse = {
 export type InvitePreview = {
   habitName: string
   habitDescription: string | null
-  emoji: string
+  icon: string // a Lucide icon key, like "book-open" (see utils/habitIcons.ts)
   color: string
   scheduleDays: number
   inviterName: string

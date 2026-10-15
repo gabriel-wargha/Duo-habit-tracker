@@ -1,5 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
+import { LoaderCircle, RotateCw, WifiOff } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
+import { Button } from '@/components/ui/button'
+import { StatusScreen } from './StatusScreen'
 
 // Wraps every page that needs a logged-in user (see App.tsx).
 // Note: this is for user experience only. The real protection is the API returning 401.
@@ -9,30 +12,27 @@ export function ProtectedRoute() {
 
   if (status === 'loading') {
     return (
-      <p role="status" className="p-8 text-center text-slate-500">
-        Loading…
-      </p>
+      <div role="status" className="flex min-h-svh items-center justify-center">
+        <LoaderCircle className="size-6 animate-spin text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading…</span>
+      </div>
     )
   }
 
   if (status === 'offline') {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-        <div role="alert" className="max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-          <p className="text-4xl" aria-hidden="true">
-            📡
-          </p>
-          <h1 className="mt-2 text-lg font-semibold text-slate-900">Can't reach the server</h1>
-          <p className="mt-1 text-sm text-slate-500">Check your connection. You're still logged in.</p>
-          <button
-            type="button"
-            onClick={retry}
-            className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
+      <StatusScreen
+        icon={WifiOff}
+        title="Can't reach the server"
+        action={
+          <Button size="lg" onClick={retry}>
+            <RotateCw data-icon="inline-start" />
             Try again
-          </button>
-        </div>
-      </main>
+          </Button>
+        }
+      >
+        Check your connection. You're still logged in.
+      </StatusScreen>
     )
   }
 

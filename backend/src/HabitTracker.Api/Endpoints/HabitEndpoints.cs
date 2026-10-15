@@ -154,7 +154,7 @@ public static class HabitEndpoints
     {
         habit.Name = request.Name.Trim();
         habit.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
-        habit.Emoji = request.Emoji.Trim();
+        habit.Icon = request.Icon;
         habit.Color = request.Color.ToLowerInvariant();
         habit.ScheduleDays = request.ScheduleDays;
     }
@@ -212,7 +212,7 @@ public static class HabitEndpoints
         }
 
         return new HabitResponse(
-            habit.Id, habit.Name, habit.Description, habit.Emoji, habit.Color,
+            habit.Id, habit.Name, habit.Description, habit.Icon, habit.Color,
             habit.ScheduleDays, habit.StartDate, habit.IsArchived, role, habit.CreatedAtUtc, mine.Stats,
             progress
                 .Select(p => new MemberResponse(p.Member.UserId, p.Member.DisplayName, p.Member.Role, p.Stats.DoneToday, p.Stats.CurrentStreak))

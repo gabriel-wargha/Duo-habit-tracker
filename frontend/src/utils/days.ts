@@ -24,7 +24,7 @@ export function dayLabel(day: DayStatus, isToday: boolean): string {
 //   filled = done · outline = missed · dashed = today, still open · faint = not scheduled
 export function dotAppearance(day: DayStatus, isToday: boolean, color: string): { className: string; style?: CSSProperties } {
   if (day.isDone) return { className: '', style: { backgroundColor: color } }
-  if (!day.isScheduled) return { className: 'scale-50 bg-slate-200' }
+  if (!day.isScheduled) return { className: 'scale-[0.35] bg-muted-foreground/25' }
   if (isToday) return { className: 'border-2 border-dashed', style: { borderColor: color } }
-  return { className: 'border-2 border-slate-300' }
+  return { className: 'border-2 border-muted-foreground/25' }
 }

@@ -3,7 +3,10 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { ApiError } from '../api/client'
 import type { RegisterRequest } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { AuthShell } from '../components/AuthShell'
 import { FormField } from '../components/FormField'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 
 type Errors = Partial<Record<keyof RegisterRequest, string>>
 
@@ -64,61 +67,59 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Create an account</h1>
-        <p className="mt-1 text-sm text-slate-500">Track habits on your own or with a partner.</p>
-
-        <form onSubmit={handleSubmit} noValidate className="mt-6 flex flex-col gap-4">
-          {formError && (
-            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {formError}
-            </p>
-          )}
-
-          <FormField
-            id="displayName"
-            label="Name"
-            autoComplete="name"
-            value={form.displayName}
-            onChange={(e) => update('displayName', e.target.value)}
-            error={fieldErrors.displayName}
-          />
-          <FormField
-            id="email"
-            label="Email"
-            type="email"
-            autoComplete="email"
-            value={form.email}
-            onChange={(e) => update('email', e.target.value)}
-            error={fieldErrors.email}
-          />
-          <FormField
-            id="password"
-            label="Password"
-            type="password"
-            autoComplete="new-password"
-            value={form.password}
-            onChange={(e) => update('password', e.target.value)}
-            error={fieldErrors.password}
-          />
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 disabled:opacity-60"
-          >
-            {submitting ? 'Creating account…' : 'Sign up'}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-slate-600">
+    <AuthShell
+      title="Create an account"
+      description="Track habits on your own or with a partner. Free."
+      footer={
+        <>
           Already have an account?{' '}
-          <Link to="/login" state={location.state} className="font-medium text-slate-900 underline">
+          <Link to="/login" state={location.state} className="font-medium text-foreground underline-offset-4 hover:underline">
             Log in
           </Link>
-        </p>
-      </div>
-    </main>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        {formError && (
+          <Alert variant="destructive">
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
+
+        <FormField
+          id="displayName"
+          label="Name"
+          autoComplete="name"
+          placeholder="Your first name is enough"
+          value={form.displayName}
+          onChange={(e) => update('displayName', e.target.value)}
+          error={fieldErrors.displayName}
+        />
+        <FormField
+          id="email"
+          label="Email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={form.email}
+          onChange={(e) => update('email', e.target.value)}
+          error={fieldErrors.email}
+        />
+        <FormField
+          id="password"
+          label="Password"
+          type="password"
+          autoComplete="new-password"
+          placeholder="At least 8 characters"
+          value={form.password}
+          onChange={(e) => update('password', e.target.value)}
+          error={fieldErrors.password}
+        />
+
+        <Button type="submit" size="lg" disabled={submitting} className="mt-1 w-full">
+          {submitting ? 'Creating account…' : 'Sign up'}
+        </Button>
+      </form>
+    </AuthShell>
   )
 }

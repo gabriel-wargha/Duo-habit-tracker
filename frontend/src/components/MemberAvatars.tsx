@@ -1,48 +1,40 @@
-import type { Member } from '../api/types';
+import { Check } from 'lucide-react'
+import type { Member } from '../api/types'
+import { Avatar, AvatarBadge, AvatarFallback, AvatarGroup } from '@/components/ui/avatar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { initials } from '@/utils/initials'
 
 type MemberAvatarsProps = {
-	members: Member[];
-	color: string;
-};
-
-// "EMMA L" → "EL", "gabriel" → "G"
-function initials(name: string): string {
-	const parts = name.trim().split(/\s+/);
-	const letters =
-		parts.length > 1
-			? parts[0][0] + parts[parts.length - 1][0]
-			: parts[0].slice(0, 1);
-	return letters.toUpperCase();
+  members: Member[]
+  color: string
 }
 
-// Small round avatars with initials. A ✅ badge means that person is done for today.
+// Overlapping avatars with initials. A check badge in the habit's color = done for today.
+// Hover (or focus) one to see the name and streak in a tooltip.
 export function MemberAvatars({ members, color }: MemberAvatarsProps) {
-	return (
-		<ul className="flex -space-x-1.5">
-			{members.map((member) => {
-				const label = `${member.displayName}: ${member.doneToday ? 'done today' : 'not done yet today'}, 🔥 ${member.currentStreak}`;
-				return (
-					<li key={member.userId} className="relative" title={label}>
-						<span className="sr-only">{label}</span>
-						<span
-							aria-hidden="true"
-							// A ring in the habit's color when done, so it reads at a glance even without the badge.
-							style={member.doneToday ? { borderColor: color } : undefined}
-							className={`flex h-8 w-8 items-center justify-center rounded-full border-2 bg-slate-100 text-xs font-semibold text-slate-700 ${
-								member.doneToday ? '' : 'border-white'
-							}`}>
-							{initials(member.displayName)}
-						</span>
-						{member.doneToday && (
-							<span
-								aria-hidden="true"
-								className="absolute -right-1 -bottom-1 text-xs leading-none">
-								✅
-							</span>
-						)}
-					</li>
-				);
-			})}
-		</ul>
-	);
+  return (
+    <AvatarGroup>
+      {members.map((member) => {
+        const status = member.doneToday ? 'done today' : 'not done yet today'
+        return (
+          <Tooltip key={member.userId}>
+            <TooltipTrigger asChild>
+              {/* tabIndex makes the avatar focusable, so keyboard users can open the tooltip too. */}
+              <Avatar tabIndex={0} aria-label={`${member.displayName}: ${status}`}>
+                <AvatarFallback className="text-xs font-medium">{initials(member.displayName)}</AvatarFallback>
+                {member.doneToday && (
+                  <AvatarBadge style={{ backgroundColor: color }} className="size-3.5!">
+                    <Check className="size-2.5! text-white" strokeWidth={4} />
+                  </AvatarBadge>
+                )}
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent>
+              {member.displayName} · {status} · {member.currentStreak} day streak
+            </TooltipContent>
+          </Tooltip>
+        )
+      })}
+    </AvatarGroup>
+  )
 }

@@ -75,7 +75,7 @@ public static class InviteEndpoints
 
         var habit = invite.Habit;
         return Results.Ok(new InvitePreviewResponse(
-            habit.Name, habit.Description, habit.Emoji, habit.Color, habit.ScheduleDays,
+            habit.Name, habit.Description, habit.Icon, habit.Color, habit.ScheduleDays,
             invite.CreatedByUser.DisplayName, invite.ExpiresAtUtc, isMember));
     }
 

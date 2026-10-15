@@ -1,30 +1,49 @@
+import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
+import { toast } from 'sonner'
+import { ArrowLeft, Check, Flame, Trophy, Users } from 'lucide-react'
 import { ApiError } from '../api/client'
 import { useHabitDetail, useToggleTodayCheckIn } from '../api/habits'
 import { useAuth } from '../auth/useAuth'
+import { HabitIcon } from '../components/HabitIcon'
 import { Heatmap } from '../components/Heatmap'
 import { MemberProgress } from '../components/MemberProgress'
 import { HabitDetailSkeleton } from '../components/Skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { describeSchedule } from '../utils/schedule'
 
-// /habits/:id – everyone's last 30 days side by side, plus the "together" row.
+// /habits/:id – everyone's last 30 days side by side, the "together" row, and a 12-week heatmap.
 export function HabitDetailPage() {
   const { id = '' } = useParams()
   const { user } = useAuth()
   const detail = useHabitDetail(id)
   const toggleToday = useToggleTodayCheckIn()
 
+  const backLink = (
+    <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit text-muted-foreground">
+      <Link to="/">
+        <ArrowLeft data-icon="inline-start" />
+        All habits
+      </Link>
+    </Button>
+  )
+
   if (detail.isPending) return <HabitDetailSkeleton />
 
   if (detail.isError) {
     const notFound = detail.error instanceof ApiError && detail.error.status === 404
     return (
-      <div role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-        {notFound ? "This habit doesn't exist, or you're not tracking it." : `Couldn't load this habit: ${detail.error.message}`}{' '}
-        <Link to="/" className="font-medium underline">
-          Back to your habits
-        </Link>
-      </div>
+      <section className="flex flex-col gap-4">
+        {backLink}
+        <Alert variant="destructive">
+          <AlertDescription>
+            {notFound ? "This habit doesn't exist, or you're not tracking it." : `Couldn't load this habit: ${detail.error.message}`}
+          </AlertDescription>
+        </Alert>
+      </section>
     )
   }
 
@@ -33,86 +52,125 @@ export function HabitDetailPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <Link to="/" className="text-sm text-slate-500 hover:text-slate-800">
-        ← All habits
-      </Link>
+      {backLink}
 
-      <div
-        style={{ borderLeftColor: habit.color }}
-        className="flex items-start gap-3 rounded-2xl border border-l-8 border-slate-200 bg-white p-4 shadow-sm"
-      >
-        <span className="text-4xl" aria-hidden="true">
-          {habit.emoji}
-        </span>
+      {/* flex-wrap: on a phone the button drops below the title instead of squeezing it. */}
+      <div className="flex flex-wrap items-center gap-4">
+        <HabitIcon icon={habit.icon} color={habit.color} size="lg" />
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold text-slate-900">{habit.name}</h1>
-          {habit.description && <p className="text-sm text-slate-500">{habit.description}</p>}
-          <p className="text-xs text-slate-500">{describeSchedule(habit.scheduleDays)}</p>
-        </div>
-        {/* No optimistic update here: the button waits for the server, then the page refetches. */}
-        <button
-          type="button"
-          onClick={() => toggleToday.mutate({ habitId: habit.id, done: !doneToday })}
-          disabled={toggleToday.isPending}
-          aria-pressed={doneToday}
-          aria-label={doneToday ? `Undo ${habit.name} for today` : `Mark ${habit.name} done for today`}
-          style={doneToday ? { backgroundColor: habit.color, borderColor: habit.color } : { borderColor: habit.color }}
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 text-xl disabled:opacity-60 ${
-            doneToday ? 'text-white' : 'text-slate-400 hover:bg-slate-50'
-          }`}
-        >
-          ✓
-        </button>
-      </div>
-
-      {toggleToday.isError && (
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Couldn't update today: {toggleToday.error.message}
-        </p>
-      )}
-
-      {joint && (
-        <div className="rounded-2xl bg-slate-900 p-4 text-white">
-          <p className="text-sm text-slate-300">Together</p>
-          <p className="text-3xl font-bold">🤝 {joint.stats.currentStreak} day{joint.stats.currentStreak === 1 ? '' : 's'}</p>
-          <p className="text-sm text-slate-300">
-            {joint.stats.doneToday ? 'Everyone is done today 🎉' : 'Not everyone is done today yet'} · best together{' '}
-            {joint.stats.longestStreak}
+          <h1 className="text-2xl font-semibold tracking-tight text-balance">{habit.name}</h1>
+          <p className="truncate text-sm text-muted-foreground">
+            {describeSchedule(habit.scheduleDays)}
+            {habit.description && <> · {habit.description}</>}
           </p>
         </div>
-      )}
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-medium text-slate-700">Last 12 weeks</h2>
-        <Heatmap days={heatmap} memberCount={progress.length} color={habit.color} />
+        {/* No optimistic update here: the button waits for the server, then the page refetches. */}
+        <Button
+          size="lg"
+          variant={doneToday ? 'default' : 'outline'}
+          disabled={toggleToday.isPending}
+          aria-pressed={doneToday}
+          onClick={() =>
+            toggleToday.mutate(
+              { habitId: habit.id, done: !doneToday },
+              { onError: (error) => toast.error("Couldn't update today", { description: error.message }) },
+            )
+          }
+          style={doneToday ? { backgroundColor: habit.color } : undefined}
+          className={cn('w-full sm:w-auto', doneToday && 'text-white hover:opacity-90')}
+        >
+          <Check data-icon="inline-start" strokeWidth={3} />
+          {doneToday ? 'Done today' : 'Mark done'}
+        </Button>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-        <h2 className="px-3 pt-2 text-sm font-medium text-slate-700">Last 30 days</h2>
-        {progress.map((member) => (
-          <MemberProgress
-            key={member.userId}
-            name={member.displayName}
-            note={member.userId === user?.id ? '(you)' : member.role === 'Owner' ? '(owner)' : '(partner)'}
-            stats={member.stats}
-            days={member.last30Days}
-            color={habit.color}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard
+          icon={<Flame className="size-4 text-orange-600" />}
+          label="Your streak"
+          value={habit.stats.currentStreak}
+          hint={`Best ${habit.stats.longestStreak}`}
+        />
+        {joint ? (
+          <StatCard
+            icon={<Users className="size-4" />}
+            label="Together"
+            value={joint.stats.currentStreak}
+            hint={joint.stats.doneToday ? 'Everyone is done today' : 'Not everyone is done today'}
           />
-        ))}
-        {joint && (
-          <MemberProgress
-            name="Together"
-            note="(days you all did it)"
-            stats={joint.stats}
-            days={joint.last30Days}
-            color={habit.color}
-            highlight
+        ) : (
+          <StatCard
+            icon={<Trophy className="size-4 text-amber-500" />}
+            label="Best streak"
+            value={habit.stats.longestStreak}
+            hint="Your record"
           />
         )}
-        <p className="px-3 pt-1 pb-2 text-xs text-slate-500">
-          Updates every 30 seconds. Faint dots are days that didn't count: not scheduled, or before someone joined.
-        </p>
+        <StatCard
+          icon={<Check className="size-4 text-emerald-600" />}
+          label="Last 30 days"
+          value={`${Math.round(habit.stats.completionRate30 * 100)}%`}
+          hint="of scheduled days done"
+        />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Last 12 weeks</CardTitle>
+          <CardDescription>
+            {progress.length > 1 ? 'Darker means more of you did it that day.' : 'Every square is a day.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Heatmap days={heatmap} memberCount={progress.length} color={habit.color} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Last 30 days</CardTitle>
+          <CardDescription>Updates every 30 seconds. Faint dots didn't count: not scheduled, or before someone joined.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-1 px-2">
+          {progress.map((member) => (
+            <MemberProgress
+              key={member.userId}
+              name={member.displayName}
+              note={member.userId === user?.id ? 'You' : member.role === 'Owner' ? 'Owner' : 'Partner'}
+              stats={member.stats}
+              days={member.last30Days}
+              color={habit.color}
+            />
+          ))}
+          {joint && (
+            <MemberProgress
+              name="Together"
+              note="days you all did it"
+              stats={joint.stats}
+              days={joint.last30Days}
+              color={habit.color}
+              highlight
+            />
+          )}
+        </CardContent>
+      </Card>
     </section>
+  )
+}
+
+type StatCardProps = { icon: ReactNode; label: string; value: number | string; hint: string }
+
+function StatCard({ icon, label, value, hint }: StatCardProps) {
+  return (
+    <Card size="sm">
+      <CardContent>
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          {icon}
+          {label}
+        </p>
+        <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </CardContent>
+    </Card>
   )
 }

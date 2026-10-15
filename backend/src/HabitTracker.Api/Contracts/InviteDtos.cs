@@ -8,7 +8,7 @@ public record CreateInviteResponse(string Code, DateTime ExpiresAtUtc);
 public record InvitePreviewResponse(
     string HabitName,
     string? HabitDescription,
-    string Emoji,
+    string Icon,
     string Color,
     int ScheduleDays,
     string InviterName,

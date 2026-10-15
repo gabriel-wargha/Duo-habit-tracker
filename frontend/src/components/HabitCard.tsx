@@ -65,7 +65,7 @@ export function HabitCard({ habit, onEdit, onArchive, onShare, onLeave, onToggle
             </Link>
           </h2>
           {habit.description && <p className="truncate text-sm text-slate-500">{habit.description}</p>}
-          <p className="text-xs text-slate-400">{describeSchedule(habit.scheduleDays)}</p>
+          <p className="text-xs text-slate-500">{describeSchedule(habit.scheduleDays)}</p>
           {/* Who you're tracking with: owners see their partner, partners see the owner. */}
           {isOwner && partners.length > 0 && (
             <p className="mt-0.5 text-xs font-medium text-slate-600">👥 with {partners.map((p) => p.displayName).join(', ')}</p>
@@ -82,23 +82,23 @@ export function HabitCard({ habit, onEdit, onArchive, onShare, onLeave, onToggle
           aria-label={stats.doneToday ? `Undo ${habit.name} for today` : `Mark ${habit.name} done for today`}
           style={stats.doneToday ? { backgroundColor: habit.color, borderColor: habit.color } : { borderColor: habit.color }}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 text-xl transition-transform active:scale-90 ${
-            stats.doneToday ? 'text-white' : 'text-slate-300 hover:bg-slate-50'
+            stats.doneToday ? 'text-white' : 'text-slate-400 hover:bg-slate-50'
           }`}
         >
           ✓
         </button>
       </div>
 
-      <div className="flex items-center gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm *:whitespace-nowrap">
         <span
-          className={`font-semibold ${stats.currentStreak > 0 ? 'text-orange-600' : 'text-slate-400'}`}
+          className={`font-semibold ${stats.currentStreak > 0 ? 'text-orange-600' : 'text-slate-500'}`}
           aria-label={`Current streak: ${stats.currentStreak} days`}
         >
           🔥 {stats.currentStreak}
         </span>
         <span className="text-slate-500">Best {stats.longestStreak}</span>
         <span className="text-slate-500">{Math.round(stats.completionRate30 * 100)}% · 30 days</span>
-        {!todayScheduled && <span className="text-xs text-slate-400">Rest day</span>}
+        {!todayScheduled && <span className="text-xs text-slate-500">Rest day</span>}
         {habit.jointStreak !== null && (
           <span className="font-semibold text-slate-700" aria-label={`Joint streak: ${habit.jointStreak} days`}>
             🤝 {habit.jointStreak}

@@ -66,7 +66,7 @@ export async function request<T>(path: string, options: { method?: string; body?
     })
   } catch {
     // fetch only throws when there is no response at all (API down, no network).
-    throw new ApiError(0, { title: 'Could not reach the server. Is the API running?' })
+    throw new ApiError(0, { title: "Can't reach the server. Check your connection and try again." })
   }
 
   if (!response.ok) {

@@ -9,6 +9,8 @@ namespace HabitTracker.Api.Endpoints;
 
 public static class HabitEndpoints
 {
+    private const int HeatmapWeeks = 12;
+
     public static RouteGroupBuilder MapHabitEndpoints(this RouteGroupBuilder api)
     {
         // Every habit route needs a logged-in user, so we require it once for the whole group.
@@ -76,8 +78,11 @@ public static class HabitEndpoints
                 StreakCalculator.LastDays(days, habit.ScheduleDays, together.StartDate, together.CheckIns, localToday));
         }
 
+        var heatmap = StreakCalculator.Heatmap(
+            HeatmapWeeks, habit.ScheduleDays, habit.StartDate, progress.Select(p => p.Days).ToList(), localToday);
+
         return Results.Ok(new HabitDetailResponse(
-            ToResponse(habit, membership.Role, userId, progress, localToday), rows, joint));
+            ToResponse(habit, membership.Role, userId, progress, localToday), rows, joint, heatmap));
     }
 
     // POST /api/habits

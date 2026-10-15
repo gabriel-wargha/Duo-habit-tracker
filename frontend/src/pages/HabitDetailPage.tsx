@@ -2,7 +2,9 @@ import { Link, useParams } from 'react-router'
 import { ApiError } from '../api/client'
 import { useHabitDetail, useToggleTodayCheckIn } from '../api/habits'
 import { useAuth } from '../auth/useAuth'
+import { Heatmap } from '../components/Heatmap'
 import { MemberProgress } from '../components/MemberProgress'
+import { HabitDetailSkeleton } from '../components/Skeleton'
 import { describeSchedule } from '../utils/schedule'
 
 // /habits/:id – everyone's last 30 days side by side, plus the "together" row.
@@ -12,12 +14,12 @@ export function HabitDetailPage() {
   const detail = useHabitDetail(id)
   const toggleToday = useToggleTodayCheckIn()
 
-  if (detail.isPending) return <p className="text-slate-500">Loading habit…</p>
+  if (detail.isPending) return <HabitDetailSkeleton />
 
   if (detail.isError) {
     const notFound = detail.error instanceof ApiError && detail.error.status === 404
     return (
-      <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+      <div role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
         {notFound ? "This habit doesn't exist, or you're not tracking it." : `Couldn't load this habit: ${detail.error.message}`}{' '}
         <Link to="/" className="font-medium underline">
           Back to your habits
@@ -26,7 +28,7 @@ export function HabitDetailPage() {
     )
   }
 
-  const { habit, progress, joint } = detail.data
+  const { habit, progress, joint, heatmap } = detail.data
   const doneToday = habit.stats.doneToday
 
   return (
@@ -45,7 +47,7 @@ export function HabitDetailPage() {
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold text-slate-900">{habit.name}</h1>
           {habit.description && <p className="text-sm text-slate-500">{habit.description}</p>}
-          <p className="text-xs text-slate-400">{describeSchedule(habit.scheduleDays)}</p>
+          <p className="text-xs text-slate-500">{describeSchedule(habit.scheduleDays)}</p>
         </div>
         {/* No optimistic update here: the button waits for the server, then the page refetches. */}
         <button
@@ -56,7 +58,7 @@ export function HabitDetailPage() {
           aria-label={doneToday ? `Undo ${habit.name} for today` : `Mark ${habit.name} done for today`}
           style={doneToday ? { backgroundColor: habit.color, borderColor: habit.color } : { borderColor: habit.color }}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 text-xl disabled:opacity-60 ${
-            doneToday ? 'text-white' : 'text-slate-300 hover:bg-slate-50'
+            doneToday ? 'text-white' : 'text-slate-400 hover:bg-slate-50'
           }`}
         >
           ✓
@@ -80,6 +82,11 @@ export function HabitDetailPage() {
         </div>
       )}
 
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="mb-2 text-sm font-medium text-slate-700">Last 12 weeks</h2>
+        <Heatmap days={heatmap} memberCount={progress.length} color={habit.color} />
+      </div>
+
       <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
         <h2 className="px-3 pt-2 text-sm font-medium text-slate-700">Last 30 days</h2>
         {progress.map((member) => (
@@ -102,7 +109,7 @@ export function HabitDetailPage() {
             highlight
           />
         )}
-        <p className="px-3 pt-1 pb-2 text-xs text-slate-400">
+        <p className="px-3 pt-1 pb-2 text-xs text-slate-500">
           Updates every 30 seconds. Faint dots are days that didn't count: not scheduled, or before someone joined.
         </p>
       </div>

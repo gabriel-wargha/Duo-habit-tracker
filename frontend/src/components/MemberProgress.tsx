@@ -20,10 +20,10 @@ export function MemberProgress({ name, note, stats, days, color, highlight = fal
     <div className={`rounded-xl p-3 ${highlight ? 'bg-slate-100' : ''}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="font-medium text-slate-900">
-          {name} {note && <span className="text-xs font-normal text-slate-400">{note}</span>}
+          {name} {note && <span className="text-xs font-normal text-slate-500">{note}</span>}
         </p>
         <p className="flex gap-3 text-sm">
-          <span className={`font-semibold ${stats.currentStreak > 0 ? 'text-orange-600' : 'text-slate-400'}`}>
+          <span className={`font-semibold ${stats.currentStreak > 0 ? 'text-orange-600' : 'text-slate-500'}`}>
             🔥 {stats.currentStreak}
           </span>
           <span className="text-slate-500">Best {stats.longestStreak}</span>

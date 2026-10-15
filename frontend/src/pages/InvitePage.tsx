@@ -58,7 +58,7 @@ export function InvitePage() {
               {preview.data.habitDescription && (
                 <p className="text-sm text-slate-500">{preview.data.habitDescription}</p>
               )}
-              <p className="mt-1 text-xs text-slate-400">{describeSchedule(preview.data.scheduleDays)}</p>
+              <p className="mt-1 text-xs text-slate-500">{describeSchedule(preview.data.scheduleDays)}</p>
             </div>
 
             {status === 'anonymous' && (

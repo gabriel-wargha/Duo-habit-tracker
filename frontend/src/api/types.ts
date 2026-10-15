@@ -81,6 +81,13 @@ export type HabitDetail = {
   habit: Habit
   progress: MemberProgress[] // one row per member, owner first
   joint: JointProgress | null // the "together" row; null when tracked alone
+  heatmap: HeatmapDay[] // last 12 weeks, starting on a Sunday, ending today
+}
+
+export type HeatmapDay = {
+  date: string
+  isScheduled: boolean
+  doneCount: number // how many members checked in that day
 }
 
 export type MemberProgress = {

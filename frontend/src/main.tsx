@@ -6,6 +6,7 @@ import { ApiError } from './api/client.ts'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './auth/AuthContext.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
 // One cache for all API data in the app.
 const queryClient = new QueryClient({
@@ -23,14 +24,17 @@ const queryClient = new QueryClient({
 // QueryClientProvider: gives every component access to the query cache (outside AuthProvider,
 // because logging out clears that cache).
 // AuthProvider: makes the logged-in user available to every component via useAuth().
+// ErrorBoundary: outermost, so a crash anywhere shows a friendly page instead of a blank one.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </QueryClientProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )

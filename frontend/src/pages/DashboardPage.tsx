@@ -5,6 +5,7 @@ import type { Habit, HabitRequest } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { HabitCard } from '../components/HabitCard'
 import { HabitForm } from '../components/HabitForm'
+import { DashboardSkeleton } from '../components/Skeleton'
 import { Modal } from '../components/Modal'
 import { ShareDialog } from '../components/ShareDialog'
 import { localToday } from '../utils/dates'
@@ -80,10 +81,10 @@ export function DashboardPage() {
 
       <div className="mt-6">
         {/* The three states of any query: loading, error, success. */}
-        {habits.isPending && <p className="text-slate-500">Loading your habits…</p>}
+        {habits.isPending && <DashboardSkeleton />}
 
         {habits.isError && (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
             Couldn't load your habits: {habits.error.message}{' '}
             <button type="button" onClick={() => habits.refetch()} className="font-medium underline">
               Try again
@@ -93,8 +94,13 @@ export function DashboardPage() {
 
         {habits.isSuccess && habits.data.length === 0 && (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-            <p className="font-medium text-slate-700">No habits yet</p>
-            <p className="mt-1 text-sm text-slate-500">Create your first habit to get started.</p>
+            <p className="text-4xl" aria-hidden="true">
+              🌱
+            </p>
+            <p className="mt-2 font-medium text-slate-700">No habits yet</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Start small: one habit you can do on most days. You can invite a friend to it later.
+            </p>
             <button
               type="button"
               onClick={() => setModal({ mode: 'create' })}

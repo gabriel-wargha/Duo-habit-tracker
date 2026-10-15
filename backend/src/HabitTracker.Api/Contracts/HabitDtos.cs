@@ -45,7 +45,9 @@ public record HabitDetailResponse(
     // One row per member, owner first.
     IReadOnlyList<MemberProgressResponse> Progress,
     // The "together" row. Null when you track it alone.
-    JointProgressResponse? Joint);
+    JointProgressResponse? Joint,
+    // The last 12 weeks, every member's check-ins combined (block 10).
+    IReadOnlyList<HeatmapDay> Heatmap);
 
 public record MemberProgressResponse(
     Guid UserId,

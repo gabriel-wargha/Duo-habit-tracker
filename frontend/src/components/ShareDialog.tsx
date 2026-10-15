@@ -48,7 +48,7 @@ export function ShareDialog({ habit, onClose }: ShareDialogProps) {
               <li key={member.userId} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-slate-800">
                   {member.displayName}{' '}
-                  <span className="text-xs text-slate-400">{member.role === 'Owner' ? '(you, owner)' : '(partner)'}</span>
+                  <span className="text-xs text-slate-500">{member.role === 'Owner' ? '(you, owner)' : '(partner)'}</span>
                 </span>
                 {member.role === 'Partner' &&
                   (confirmRemove === member.userId ? (

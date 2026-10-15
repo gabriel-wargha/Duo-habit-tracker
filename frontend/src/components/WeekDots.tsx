@@ -24,7 +24,7 @@ export function WeekDots({ days, color }: WeekDotsProps) {
             <span aria-hidden="true" style={dot.style} className={`h-5 w-5 rounded-full ${dot.className}`} />
             <span
               aria-hidden="true"
-              className={`text-[10px] ${isToday ? 'font-bold text-slate-700' : 'text-slate-400'}`}
+              className={`text-[10px] ${isToday ? 'font-bold text-slate-700' : 'text-slate-500'}`}
             >
               {LETTERS[parseLocalDate(day.date).getDay()]}
             </span>

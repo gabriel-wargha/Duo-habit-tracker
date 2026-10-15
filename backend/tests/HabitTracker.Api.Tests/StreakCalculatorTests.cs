@@ -279,4 +279,40 @@ public class StreakCalculatorTests
         Assert.True(days[^1].IsDone);
         Assert.False(days[0].IsScheduled); // Sep 14, before the start date
     }
+
+    // ----- Heatmap -----
+
+    [Fact]
+    public void Heatmap_starts_on_a_Sunday_and_ends_today()
+    {
+        var days = StreakCalculator.Heatmap(12, EveryDay, Oct(1), [new MemberDays(Oct(1), Done())], Today);
+
+        Assert.Equal(DayOfWeek.Sunday, days[0].Date.DayOfWeek);
+        Assert.Equal(Today, days[^1].Date);
+        // 11 full weeks + Sun, Mon, Tue of this week.
+        Assert.Equal(11 * 7 + 3, days.Count);
+    }
+
+    [Fact]
+    public void Heatmap_counts_how_many_members_were_done()
+    {
+        var you = new MemberDays(Oct(1), Done(11, 12));
+        var partner = new MemberDays(Oct(1), Done(12));
+
+        var days = StreakCalculator.Heatmap(1, EveryDay, Oct(1), [you, partner], Today);
+
+        Assert.Equal(1, days.Single(d => d.Date == Oct(11)).DoneCount);
+        Assert.Equal(2, days.Single(d => d.Date == Oct(12)).DoneCount);
+        Assert.Equal(0, days.Single(d => d.Date == Oct(13)).DoneCount);
+    }
+
+    [Fact]
+    public void Heatmap_days_before_the_start_or_off_schedule_are_not_scheduled()
+    {
+        var days = StreakCalculator.Heatmap(2, MonWedFri, Oct(7), [new MemberDays(Oct(7), Done())], Today);
+
+        Assert.False(days.Single(d => d.Date == Oct(5)).IsScheduled);  // Monday, but before the start
+        Assert.True(days.Single(d => d.Date == Oct(7)).IsScheduled);   // Wednesday, the start
+        Assert.False(days.Single(d => d.Date == Oct(8)).IsScheduled);  // Thursday, not scheduled
+    }
 }

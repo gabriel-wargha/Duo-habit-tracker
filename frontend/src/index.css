@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Accessibility: a clear outline on whatever has keyboard focus.
+   :focus-visible only shows it for keyboard users (Tab), not on every mouse click. */
+:focus-visible {
+  outline: 2px solid var(--color-slate-900);
+  outline-offset: 2px;
+}
+
+/* Respect the OS "reduce motion" setting: no scale animations on the check-in button. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

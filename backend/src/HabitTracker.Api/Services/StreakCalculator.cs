@@ -11,6 +11,10 @@ public record HabitStats(
     bool DoneToday,
     IReadOnlyList<DayStatus> Last7Days);
 
+// One square in the heatmap. DoneCount = how many members checked in that day
+// (0 or 1 for a solo habit, 0–2 for a shared one), so the color can show "one of you" vs "both".
+public record HeatmapDay(DateOnly Date, bool IsScheduled, int DoneCount);
+
 // One member's input to the calculator: when their stats start, and the days they checked in.
 public record MemberDays(DateOnly StartDate, IReadOnlySet<DateOnly> CheckIns);
 
@@ -119,6 +123,24 @@ public static class StreakCalculator
             together.IntersectWith(member.CheckIns);
 
         return new MemberDays(members.Max(m => m.StartDate), together);
+    }
+
+    // The calendar heatmap: whole weeks (Sunday to Saturday), the last one being the current week,
+    // cut off at today. Starting on a Sunday means every column in the grid is exactly one week.
+    public static List<HeatmapDay> Heatmap(int weeks, int scheduleDays, DateOnly habitStart, IReadOnlyList<MemberDays> members, DateOnly today)
+    {
+        var thisSunday = today.AddDays(-(int)today.DayOfWeek);
+        var first = thisSunday.AddDays(-7 * (weeks - 1));
+
+        var days = new List<HeatmapDay>();
+        for (var day = first; day <= today; day = day.AddDays(1))
+        {
+            days.Add(new HeatmapDay(
+                day,
+                IsScheduled: day >= habitStart && IsScheduled(scheduleDays, day),
+                DoneCount: members.Count(m => m.CheckIns.Contains(day))));
+        }
+        return days;
     }
 
     // Oldest first, ending with today. Calculate() uses 7 days for the cards; the detail page asks for 30.

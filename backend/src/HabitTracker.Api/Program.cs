@@ -107,6 +107,18 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+// ----- Demo data (block 10) -----
+// When Demo:Seed is true (appsettings.Development.json), reset the demo account on startup.
+// A "scope" gives us a fresh DbContext, like each HTTP request gets, since there's no request here.
+if (app.Configuration.GetValue<bool>("Demo:Seed"))
+{
+    using var scope = app.Services.CreateScope();
+    await Seed.ResetDemoAsync(
+        scope.ServiceProvider.GetRequiredService<AppDbContext>(),
+        scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>(),
+        LocalDate.UtcToday);
+}
+
 // ----- 2. Middleware pipeline: every request passes through these, in order -----
 if (app.Environment.IsDevelopment())
 {

@@ -1,12 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { authApi, setUnauthorizedHandler, tokenStorage } from '../api/client'
+import { ApiError, authApi, setUnauthorizedHandler, tokenStorage } from '../api/client'
 import type { AuthResponse, LoginRequest, RegisterRequest, User } from '../api/types'
 import { AuthContext, type AuthStatus } from './useAuth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [status, setStatus] = useState<AuthStatus>(() => (tokenStorage.get() ? 'loading' : 'anonymous'))
+  // Bumping this re-runs the "who am I?" effect below (used by retry).
+  const [attempt, setAttempt] = useState(0)
 
   const queryClient = useQueryClient()
 
@@ -37,14 +39,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(me)
         setStatus('authenticated')
       })
-      .catch(() => {
-        // Invalid/expired token (the 401 handler already cleared it) or API down.
-        if (!cancelled) logout()
+      .catch((error: unknown) => {
+        if (cancelled) return
+        // Only a 401 means the token is bad (and the 401 handler already logged us out).
+        // No answer (status 0) or a server error (5xx) says nothing about the token: keep it.
+        const serverUnreachable = error instanceof ApiError && (error.status === 0 || error.status >= 500)
+        if (serverUnreachable) setStatus('offline')
+        else logout()
       })
     return () => {
       cancelled = true
     }
-  }, [logout])
+  }, [logout, attempt])
+
+  const retry = useCallback(() => {
+    setStatus('loading')
+    setAttempt((n) => n + 1)
+  }, [])
 
   const signIn = useCallback((response: AuthResponse) => {
     tokenStorage.set(response.token)
@@ -57,8 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // useMemo: consumers only re-render when one of these values actually changes.
   const value = useMemo(
-    () => ({ user, status, login, register, logout }),
-    [user, status, login, register, logout],
+    () => ({ user, status, login, register, logout, retry }),
+    [user, status, login, register, logout, retry],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

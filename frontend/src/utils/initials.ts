@@ -1,4 +1,4 @@
-// "Ana Souza" → "AS", "gabriel" → "G", "Alex (demo)" → "A". Used for avatars.
+// "Ana Souza" → "AS", "gabriel" → "G", "Alex (work)" → "A". Used for avatars.
 // Only words that start with a letter count (\p{L} = any letter in any alphabet, thanks to the u flag),
 // so brackets, emojis and numbers don't end up in an avatar.
 export function initials(name: string): string {

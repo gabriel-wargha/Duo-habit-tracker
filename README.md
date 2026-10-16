@@ -6,13 +6,9 @@ A social habit tracker: check in on your daily habits, keep your streaks alive, 
 
 ## Try it
 
-The app isn't online yet (deployment is next on the roadmap). Run it locally ([see below](#run-it-locally)), then click **Try the demo** on the welcome page, or log in with:
+**Live:** https://habit-tracker-api-gw-hjbvg0c4cfhzfdg9.northcentralus-01.azurewebsites.net — create an account, add a habit, and invite a friend with a link.
 
-| Email | Password |
-| --- | --- |
-| `demo@habittracker.dev` | `try-the-demo-2026` |
-
-The demo account is created by the API on startup and resets to the same data every time it restarts.
+It runs on free tiers, so the first visit after a quiet period can take 10–30 seconds while the server wakes up.
 
 ## Features
 
@@ -126,7 +122,7 @@ cd backend && dotnet test
 backend/
   src/HabitTracker.Api/
     Domain/       entities: User, Habit, HabitMember, CheckIn, Invite
-    Data/         AppDbContext, migrations, demo seed
+    Data/         AppDbContext, migrations
     Contracts/    request/response DTOs
     Endpoints/    minimal API route groups
     Services/     StreakCalculator, TokenService, LocalDate
@@ -140,7 +136,7 @@ frontend/src/
 
 ## Roadmap
 
-- [x] v1: habits, check-ins and streaks, partners and joint streaks, heatmap, demo account
+- [x] v1: habits, check-ins and streaks, partners and joint streaks, heatmap
 - [ ] Deploy: Neon Postgres, Azure App Service and Static Web Apps, GitHub Actions
 - [ ] Real-time partner updates with SignalR, and a "nudge" button
 - [ ] Reminders, groups and challenges, achievements

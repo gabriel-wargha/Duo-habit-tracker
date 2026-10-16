@@ -1,12 +1,10 @@
-import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { ArrowRight, CalendarCheck, Check, Flame, Users } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
 import { HabitIcon } from '../components/HabitIcon'
 import { Logo } from '../components/Logo'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { DEMO_LOGIN } from '../utils/demo'
 
 const FEATURES = [
   {
@@ -28,21 +26,9 @@ const FEATURES = [
 
 // /welcome – what a logged-out visitor sees first.
 export function LandingPage() {
-  const { status, login } = useAuth()
-  const navigate = useNavigate()
-  const [demoState, setDemoState] = useState<'idle' | 'loading' | 'error'>('idle')
+  const { status } = useAuth()
 
   if (status === 'authenticated') return <Navigate to="/" replace />
-
-  async function tryDemo() {
-    setDemoState('loading')
-    try {
-      await login(DEMO_LOGIN)
-      navigate('/', { replace: true })
-    } catch {
-      setDemoState('error')
-    }
-  }
 
   return (
     <div className="min-h-svh bg-background">
@@ -79,15 +65,10 @@ export function LandingPage() {
                   <ArrowRight data-icon="inline-end" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-11 px-5" onClick={tryDemo} disabled={demoState === 'loading'}>
-                {demoState === 'loading' ? 'Opening the demo…' : 'Try the demo'}
+              <Button size="lg" variant="outline" className="h-11 px-5" asChild>
+                <Link to="/login">I already have an account</Link>
               </Button>
             </div>
-            {demoState === 'error' && (
-              <p role="alert" className="mt-3 text-sm text-destructive">
-                The demo isn't available right now. Please create an account instead.
-              </p>
-            )}
           </div>
 
           {/* A static preview of the app, built from the real components' look. aria-hidden:

@@ -23,7 +23,7 @@ export function Layout() {
       {/* sticky + backdrop-blur: the header stays on top while scrolling, with the page faintly behind it. */}
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between gap-4 px-4">
-          <Link to="/" aria-label="Habit Tracker, home">
+          <Link to="/" aria-label="InSync, home">
             <Logo />
           </Link>
 

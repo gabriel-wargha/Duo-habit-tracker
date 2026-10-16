@@ -33,7 +33,7 @@ export function InvitePage() {
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted/40 p-4">
-      <Link to="/welcome" aria-label="Habit Tracker, home">
+      <Link to="/welcome" aria-label="InSync, home">
         <Logo />
       </Link>
 
@@ -59,7 +59,7 @@ export function InvitePage() {
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">Ask your partner to send you a new link.</p>
               <Button variant="outline" size="lg" className="mt-5" asChild>
-                <Link to="/">Go to Habit Tracker</Link>
+                <Link to="/">Go to InSync</Link>
               </Button>
             </div>
           )}

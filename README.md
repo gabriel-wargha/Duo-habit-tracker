@@ -1,4 +1,4 @@
-# Habit Tracker – build habits together
+# InSync – you two, synced up
 
 A social habit tracker: check in on your daily habits, keep your streaks alive, and share a habit with a friend so you can see each other's progress and build a **joint streak**.
 

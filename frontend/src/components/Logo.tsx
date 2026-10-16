@@ -8,7 +8,7 @@ export function Logo({ className }: { className?: string }) {
       <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <Repeat2 className="size-4" strokeWidth={2.5} aria-hidden="true" />
       </span>
-      Habit Tracker
+      InSync
     </span>
   )
 }

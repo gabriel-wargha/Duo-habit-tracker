@@ -14,7 +14,7 @@ type AuthShellProps = {
 export function AuthShell({ title, description, children, footer }: AuthShellProps) {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted/40 p-4">
-      <Link to="/welcome" aria-label="Habit Tracker, home">
+      <Link to="/welcome" aria-label="InSync, home">
         <Logo />
       </Link>
       <Card className="w-full max-w-sm">

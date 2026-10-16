@@ -49,8 +49,9 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 }
 
 // ----- Where the API lives -----
-// Locally VITE_API_URL is unset, so this is "" and requests go to /api on the same origin (Vite's proxy).
-// In production it's the API's own address, like https://habit-api.azurewebsites.net.
+// Usually unset, so this is "" and requests go to /api on the same origin: Vite's proxy locally,
+// and in production the API itself, which also serves this website. Set VITE_API_URL only if the
+// frontend is ever hosted somewhere else than the API, e.g. https://habit-api.azurewebsites.net.
 // VITE_ variables are baked into the JavaScript at build time (npm run build), so this is public
 // information, never a secret.
 const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '') // drop a trailing slash

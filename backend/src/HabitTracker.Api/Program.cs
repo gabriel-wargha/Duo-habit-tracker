@@ -6,6 +6,7 @@ using HabitTracker.Api.Endpoints;
 using HabitTracker.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -132,6 +133,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+// Gzip/Brotli for the website's files: the React bundle is ~550 KB raw, ~170 KB compressed.
+// Over HTTPS this is off by default (an attack called BREACH can abuse compressed responses that mix
+// secrets with attacker-controlled text), so below we only use it for the website, never for /api.
+builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
+
 var app = builder.Build();
 
 // ----- Demo data (block 10) -----
@@ -180,6 +186,26 @@ app.UseStatusCodePages();
 // runs, and adds the "allowed" headers to every response, including errors like 401 and 429.
 app.UseCors();
 
+// ----- The website (deploy option B): this API also serves the built React app -----
+// The deploy workflow copies frontend/dist into wwwroot next to the API. Locally there's no wwwroot
+// (Vite serves the frontend on :5173), so this does nothing in development.
+app.UseWhen(context => !context.Request.Path.StartsWithSegments("/api"), website => website.UseResponseCompression());
+
+var websiteFiles = new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        // Vite puts a hash of the content in every file name under /assets (index-DMtv2s1M.js), so a
+        // file with that name never changes: browsers may keep it for a year. index.html has no hash,
+        // so browsers must check for a new version every time, or they'd keep running an old deploy.
+        context.Context.Response.Headers.CacheControl = context.Context.Request.Path.StartsWithSegments("/assets")
+            ? "public, max-age=31536000, immutable"
+            : "no-cache";
+    },
+};
+app.UseDefaultFiles(); // "/" → "/index.html"
+app.UseStaticFiles(websiteFiles);
+
 // Order matters: first find out who the caller is, then check what they may do.
 app.UseAuthentication();
 app.UseAuthorization();
@@ -192,5 +218,13 @@ api.MapAuthEndpoints();
 api.MapHabitEndpoints();
 api.MapCheckInEndpoints();
 api.MapInviteEndpoints();
+
+// ----- 4. Fallbacks: what to answer when no endpoint matched -----
+// An unknown /api URL is a real 404 (a ProblemDetails, like every other API error)...
+app.MapFallback("/api/{**path}", () => Results.NotFound());
+// ...but any other URL without a file extension (/habits/123, /invite/abc) is a page of the React app:
+// we send index.html and React Router shows the right page. Without this, opening an invite link
+// (or refreshing any page except /) would be a 404, because there's no file called /invite/abc.
+app.MapFallbackToFile("index.html", websiteFiles);
 
 app.Run();

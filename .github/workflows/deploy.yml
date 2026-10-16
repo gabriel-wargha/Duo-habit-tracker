@@ -1,0 +1,75 @@
+# Builds the React frontend and the .NET API, tests them, and deploys both to ONE Azure App Service.
+# The API serves the website too (see "The website" in Program.cs), so there's one address for everything.
+#
+# Runs on every push to main that changes the app (and by hand: Actions tab → Deploy → Run workflow).
+# If linting, the type check or a test fails, nothing is deployed: the live site keeps the last good version.
+#
+# Needs, in GitHub → Settings → Secrets and variables → Actions:
+#   secret   AZURE_WEBAPP_PUBLISH_PROFILE  the App Service's publish profile (the downloaded file's contents)
+#   variable AZURE_WEBAPP_NAME             the App Service's name: habit-tracker-api-gw
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'global.json'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch: # the "Run workflow" button
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest # a fresh Linux machine from GitHub, thrown away after the run
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v7
+
+      # ----- Frontend -----
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm # reuse downloaded packages between runs, so installs are faster
+          cache-dependency-path: frontend/package-lock.json
+
+      # npm ci = install exactly what package-lock.json says (unlike npm install, it never changes it).
+      - name: Install frontend packages
+        run: npm ci
+        working-directory: frontend
+
+      - name: Lint the frontend
+        run: npm run lint
+        working-directory: frontend
+
+      # Type-checks (tsc) and builds into frontend/dist. No VITE_API_URL: the website and the API share
+      # one address, so the app calls /api on its own origin, exactly like with Vite's proxy locally.
+      - name: Build the frontend
+        run: npm run build
+        working-directory: frontend
+
+      # ----- Backend -----
+      - name: Install the .NET SDK (the version pinned in global.json)
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Run the tests
+        run: dotnet test backend/HabitTracker.slnx --configuration Release
+
+      # "publish" = compile in Release mode and gather everything the app needs to run into one folder.
+      - name: Publish the API
+        run: dotnet publish backend/src/HabitTracker.Api --configuration Release --output publish
+
+      # The website's files go in wwwroot, the folder ASP.NET Core serves static files from.
+      - name: Put the website inside the API
+        run: cp -r frontend/dist publish/wwwroot
+
+      # ----- Deploy: upload the folder (API + website) to Azure -----
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: publish

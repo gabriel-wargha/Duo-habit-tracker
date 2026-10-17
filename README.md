@@ -1,144 +1,101 @@
 # InSync – you two, synced up
 
-A social habit tracker: check in on your daily habits, keep your streaks alive, and share a habit with a friend so you can see each other's progress and build a **joint streak**.
+InSync is a social habit tracker. You check in on your daily habits, keep your streaks alive, and share a habit with a friend so you can see each other's progress and build a **joint streak**: the days you *both* did it.
+
+### 👉 [Use InSync live](https://habit-tracker-api-gw-hjbvg0c4cfhzfdg9.northcentralus-01.azurewebsites.net)
+
+No install needed: open the link, create an account and start tracking. It runs on free tiers, so the first visit after a quiet period can take 10–30 seconds while the server wakes up.
 
 ![The dashboard with four habits, streaks and a partner's check-in](docs/screenshots/dashboard.jpg)
 
-## Try it
+**Features**
 
-**Live:** https://habit-tracker-api-gw-hjbvg0c4cfhzfdg9.northcentralus-01.azurewebsites.net — create an account, add a habit, and invite a friend with a link.
-
-It runs on free tiers, so the first visit after a quiet period can take 10–30 seconds while the server wakes up.
-
-## Features
-
-- **Habits on your schedule:** pick the weekdays that count (every day, weekdays, Mon/Wed/Fri…), plus an emoji and a color.
-- **One-tap check-ins:** the card updates instantly (an optimistic update) and rolls back if the server says no.
-- **Fair streaks:** rest days never break a streak, and today isn't "missed" until it's over. Current streak, best streak, 30-day completion rate.
-- **Track together:** invite a partner with a single-use link that expires in 7 days. You see their ✅ when they're done, both of your streaks, and a joint streak of the days you *both* did it.
+- **Habits on your schedule:** pick the weekdays that count (every day, weekdays, Mon/Wed/Fri…), plus an icon and a color.
+- **One-tap check-ins:** the card updates instantly and rolls back if the server says no.
+- **Fair streaks:** rest days never break a streak, and today isn't "missed" until it's over.
+- **Track together:** invite a partner with a single-use link that expires in 7 days. You see each other's check-ins, both streaks and your joint streak.
 - **Habit detail page:** everyone's last 30 days side by side, plus a 12-week calendar heatmap.
-- **Live-ish updates:** the page asks for changes every 30 seconds and whenever you come back to the tab.
 - **Works on phones**, with keyboard focus outlines, screen-reader labels and readable contrast.
 
 | Habit detail | On a phone |
 | --- | --- |
 | ![Joint streak, 12-week heatmap and side-by-side rows](docs/screenshots/habit-detail.jpg) | ![The dashboard and the detail page at phone width](docs/screenshots/mobile.jpg) |
 
-## Tech stack
+**How it fits together:** a React app talks to an ASP.NET Core API under `/api`, which stores data in PostgreSQL with EF Core. Logging in returns a signed JWT that the app sends with every request. Every habit endpoint checks that you're a member of *that* habit. The streak, joint streak and heatmap logic lives in a pure, unit-tested class (`StreakCalculator`). In production, the API also serves the built React app, so everything runs from one Azure App Service.
 
-| | |
-| --- | --- |
-| **Frontend** | React 19, TypeScript (strict), Vite, TanStack Query, React Router, Tailwind CSS 4 |
-| **Backend** | ASP.NET Core (.NET 10) minimal APIs, EF Core 10, JWT authentication, rate limiting |
-| **Database** | PostgreSQL 17 |
-| **Tests** | xUnit, covering the streak, joint streak and heatmap logic |
+## Instructions for Build and Use
 
-## Architecture
+Steps to build and/or run the software:
 
-```mermaid
-flowchart LR
-    Browser["React app<br/>(TanStack Query cache)"]
-    subgraph API["ASP.NET Core API"]
-        Endpoints["Endpoints<br/>/api/auth · /api/habits · /api/invites"]
-        Calc["StreakCalculator<br/>(pure, unit-tested)"]
-        EF["EF Core<br/>AppDbContext"]
-    end
-    DB[(PostgreSQL)]
+1. **Start a PostgreSQL database.** Either use Docker (`docker compose up -d`, which uses `docker-compose.yml`) or Homebrew on macOS:
+   ```bash
+   brew install postgresql@17 && brew services start postgresql@17
+   createdb habittracker
+   ```
+2. **Configure the API.** Secrets live in .NET user secrets, outside the repo:
+   ```bash
+   cd backend/src/HabitTracker.Api
+   # Docker:
+   dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=habittracker;Username=habit;Password=habit_dev_password"
+   # Homebrew (your macOS user, no password):
+   dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=habittracker;Username=$(whoami)"
+   # Any random string of 32+ characters:
+   dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
+   ```
+3. **Create the tables and start the API** (on http://localhost:5080):
+   ```bash
+   dotnet tool restore
+   dotnet ef database update
+   dotnet run
+   ```
+4. **Start the frontend** in a second terminal (on http://localhost:5173). Vite forwards `/api` calls to the API, so no CORS setup is needed:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+5. **Run the tests:** `cd backend && dotnet test`
 
-    Browser -- "fetch /api/... + JWT" --> Endpoints
-    Endpoints --> Calc
-    Endpoints --> EF --> DB
-```
+Instructions for using the software:
 
-- **The browser talks only to `/api`.** In development, Vite's proxy forwards those calls to the API, so there's no CORS setup.
-- **Who you are:** the API issues a signed JWT at login; every request sends it, and the API checks it.
-- **What you may see:** every habit endpoint checks your membership in *that* habit. Non-members get 404, and partners can't edit or archive (403).
-- **The interesting logic is pure:** streaks, the joint streak and the heatmap take dates in and give numbers out. No database and no clock, so they're easy to test.
+1. Open the live site at https://habit-tracker-api-gw-hjbvg0c4cfhzfdg9.northcentralus-01.azurewebsites.net (or http://localhost:5173 if you're running it locally) and **create an account**.
+2. Click **New habit**, give it a name, icon and color, and choose the days it's scheduled on.
+3. **Tap a habit's check button** each day you do it, and watch your streak grow.
+4. To track together, click **Invite** on a habit's card, and send the invite link to a friend. Once they accept, you'll both see each other's check-ins and your joint streak.
+5. Open a habit to see the 30-day side-by-side view and the 12-week heatmap.
 
-```mermaid
-erDiagram
-    User ||--o{ HabitMember : "is a member"
-    Habit ||--o{ HabitMember : "has members"
-    Habit ||--o{ CheckIn : ""
-    User ||--o{ CheckIn : ""
-    Habit ||--o{ Invite : ""
-```
+## Development Environment
 
-A habit has one **owner** and partners (`HabitMember.Role`). A **check-in** is one user, one habit, one calendar day, unique per (habit, user, date).
+To recreate the development environment, you need the following software and/or libraries with the specified versions:
 
-## Run it locally
+* [.NET SDK 10](https://dotnet.microsoft.com/download) (10.0.103, pinned in `global.json`) with ASP.NET Core minimal APIs
+* Entity Framework Core 10 with Npgsql (the PostgreSQL provider) and JWT Bearer authentication
+* [PostgreSQL 17](https://www.postgresql.org/download/) (Docker or Homebrew)
+* [Node.js 22+](https://nodejs.org) and npm
+* React 19, TypeScript 6 (strict mode), Vite 8
+* TanStack Query 5, React Router 7, Tailwind CSS 4
+* xUnit for the backend tests
+* Hosting: Azure App Service (API + website), Neon (PostgreSQL) and GitHub Actions (build, test and deploy)
 
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download), [Node.js 22+](https://nodejs.org) and PostgreSQL 17.
+## Useful Websites to Learn More
 
-**1. Start a database.** Pick one:
+I found these websites useful in developing this software:
 
-```bash
-# Option A: Docker (uses docker-compose.yml)
-docker compose up -d
+* [ASP.NET Core minimal APIs](https://learn.microsoft.com/aspnet/core/fundamentals/minimal-apis)
+* [Entity Framework Core documentation](https://learn.microsoft.com/ef/core/)
+* [React documentation](https://react.dev)
+* [TanStack Query documentation](https://tanstack.com/query/latest)
+* [Tailwind CSS documentation](https://tailwindcss.com/docs)
+* [JWT introduction (jwt.io)](https://jwt.io/introduction)
+* [Deploy to Azure App Service with GitHub Actions](https://learn.microsoft.com/azure/app-service/deploy-github-actions)
+* [Neon documentation](https://neon.tech/docs)
 
-# Option B: Homebrew on macOS
-brew install postgresql@17 && brew services start postgresql@17
-createdb habittracker
-```
+## Future Work
 
-**2. Configure the API.** Secrets live in .NET user secrets, outside the repo:
+The following items I plan to fix, improve, and/or add to this project in the future:
 
-```bash
-cd backend/src/HabitTracker.Api
-# Docker (option A):
-dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=habittracker;Username=habit;Password=habit_dev_password"
-# Homebrew (option B): your macOS user, no password
-dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=habittracker;Username=$(whoami)"
-
-# Any random string of 32+ characters:
-dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
-```
-
-**3. Create the tables and start the API** (on http://localhost:5080):
-
-```bash
-dotnet tool restore
-dotnet ef database update
-dotnet run
-```
-
-**4. Start the frontend** in a second terminal (on http://localhost:5173):
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-**Run the tests:**
-
-```bash
-cd backend && dotnet test
-```
-
-## Project structure
-
-```
-backend/
-  src/HabitTracker.Api/
-    Domain/       entities: User, Habit, HabitMember, CheckIn, Invite
-    Data/         AppDbContext, migrations
-    Contracts/    request/response DTOs
-    Endpoints/    minimal API route groups
-    Services/     StreakCalculator, TokenService, LocalDate
-  tests/HabitTracker.Api.Tests/
-frontend/src/
-  api/            typed fetch client, TanStack Query hooks
-  auth/           AuthContext + useAuth
-  components/     HabitCard, Heatmap, MemberProgress, ShareDialog…
-  pages/          Landing, Login, Register, Dashboard, HabitDetail, Invite
-```
-
-## Roadmap
-
-- [x] v1: habits, check-ins and streaks, partners and joint streaks, heatmap
-- [ ] Deploy: Neon Postgres, Azure App Service and Static Web Apps, GitHub Actions
-- [ ] Real-time partner updates with SignalR, and a "nudge" button
-- [ ] Reminders, groups and challenges, achievements
-
-The full plan is in [PLAN.md](PLAN.md), with details in [BLOCKS.md](BLOCKS.md).
+* [ ] A mobile app for iPhone and Android with React Native (Expo), published on the App Store
+* [ ] Reminder push notifications ("Your partner already checked in today")
+* [ ] Delete your account from inside the app
+* [ ] Real-time partner updates with SignalR, and a "nudge" button
+* [ ] Groups and challenges with more than two people, and achievements

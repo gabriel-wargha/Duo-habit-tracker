@@ -6,17 +6,17 @@ The project owner is **learning** while building, so the explanations matter as 
 ## Project context
 
 - **What:** A social habit tracker. Users log in, track habits, and track habits *together* with partners.
-- **Plan:** `PLAN.md` is the checklist. `BLOCKS.md` has the details for every block (goal, tasks, concepts, files, done-when, commit).
+- **Plan:** `docs/PLAN.md` is the checklist. `docs/BLOCKS.md` has the details for every block (goal, tasks, concepts, files, done-when, commit).
 - **Stack:** ASP.NET Core Web API + EF Core + PostgreSQL (`backend/`) · React + TypeScript + Vite + TanStack Query + React Router + Tailwind (`frontend/`).
-- **Hosting:** postponed. The app runs locally (API + React + Postgres in Docker). Deployment is parked under "Later – Deploy" at the end of `BLOCKS.md`; don't add hosting, CORS-for-production or deploy workflows unless the owner asks.
+- **Hosting:** postponed. The app runs locally (API + React + Postgres in Docker). Deployment is parked under "Later – Deploy" at the end of `docs/BLOCKS.md`; don't add hosting, CORS-for-production or deploy workflows unless the owner asks.
 
 ## The workflow
 
 The owner will say something like **"Build block 4"**. For every block, follow these steps in order.
 
 ### 1. Prepare
-- Read `PLAN.md` and the block's section in `BLOCKS.md`.
-- Check that earlier blocks are done (checked in `PLAN.md`). If one isn't, say so and ask before continuing. Block 5 (deploy) is postponed: skip it and don't treat it as missing.
+- Read `docs/PLAN.md` and the block's section in `docs/BLOCKS.md`.
+- Check that earlier blocks are done (checked in `docs/PLAN.md`). If one isn't, say so and ask before continuing. Block 5 (deploy) is postponed: skip it and don't treat it as missing.
 - Look at the current code before changing anything. Never assume what's there.
 - If something in the block is unclear or conflicts with the existing code, ask **one** short question before building.
 
@@ -24,7 +24,7 @@ The owner will say something like **"Build block 4"**. For every block, follow t
 - Do only that block's tasks. Don't jump ahead to later blocks.
 - Keep changes small and readable. Prefer clear code over clever code.
 - Add short comments where the *why* isn't obvious, not on every line.
-- If you need to deviate from `BLOCKS.md` (a package changed, a better approach exists), explain why in the summary.
+- If you need to deviate from `docs/BLOCKS.md` (a package changed, a better approach exists), explain why in the summary.
 
 ### 3. Verify
 - Build the backend (`dotnet build`) and run tests (`dotnet test`) when there are tests.
@@ -60,10 +60,10 @@ After the block is built, write an explanation using this format:
 git add . && git commit -m "<suggested message from BLOCKS.md>"
 ```
 
-Cover **every concept listed for the block in `BLOCKS.md`**, plus any new concept that came up during the build.
+Cover **every concept listed for the block in `docs/BLOCKS.md`**, plus any new concept that came up during the build.
 
 ### 5. Wrap up
-- Check off the block in `PLAN.md` (`- [ ]` → `- [x]`).
+- Check off the block in `docs/PLAN.md` (`- [ ]` → `- [x]`).
 - Suggest the commit message. **Don't commit or push** unless the owner asks; they commit themselves so they review their own history.
 - End with one line previewing the next block.
 
@@ -83,9 +83,10 @@ Cover **every concept listed for the block in `BLOCKS.md`**, plus any new concep
 ```
 habit-tracker/
 ├── AGENTS.md
-├── PLAN.md
-├── BLOCKS.md
 ├── README.md
+├── docs/
+│   ├── PLAN.md
+│   └── BLOCKS.md
 ├── docker-compose.yml
 ├── .github/workflows/   # CI in block 15; deploy workflows later
 ├── backend/

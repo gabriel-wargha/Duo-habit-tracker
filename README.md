@@ -6,8 +6,6 @@ InSync is a social habit tracker. You check in on your daily habits, keep your s
 
 No install needed: open the link, create an account and start tracking. It runs on free tiers, so the first visit after a quiet period can take 10–30 seconds while the server wakes up.
 
-![The dashboard with four habits, streaks and a partner's check-in](docs/screenshots/dashboard.jpg)
-
 **Features**
 
 - **Habits on your schedule:** pick the weekdays that count (every day, weekdays, Mon/Wed/Fri…), plus an icon and a color.
@@ -16,10 +14,6 @@ No install needed: open the link, create an account and start tracking. It runs 
 - **Track together:** invite a partner with a single-use link that expires in 7 days. You see each other's check-ins, both streaks and your joint streak.
 - **Habit detail page:** everyone's last 30 days side by side, plus a 12-week calendar heatmap.
 - **Works on phones**, with keyboard focus outlines, screen-reader labels and readable contrast.
-
-| Habit detail | On a phone |
-| --- | --- |
-| ![Joint streak, 12-week heatmap and side-by-side rows](docs/screenshots/habit-detail.jpg) | ![The dashboard and the detail page at phone width](docs/screenshots/mobile.jpg) |
 
 **How it fits together:** a React app talks to an ASP.NET Core API under `/api`, which stores data in PostgreSQL with EF Core. Logging in returns a signed JWT that the app sends with every request. Every habit endpoint checks that you're a member of *that* habit. The streak, joint streak and heatmap logic lives in a pure, unit-tested class (`StreakCalculator`). In production, the API also serves the built React app, so everything runs from one Azure App Service.
 

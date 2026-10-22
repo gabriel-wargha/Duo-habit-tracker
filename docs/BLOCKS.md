@@ -3,7 +3,7 @@
 Each block is about 1 hour. Every block lists its **goal**, the **tasks**, the **concepts** you'll learn, the **files** it touches, a **done when** check, and a suggested **commit message**.
 
 **Stack:** ASP.NET Core Web API (.NET) · EF Core · PostgreSQL · React + TypeScript · Vite · TanStack Query · React Router · Tailwind CSS
-**Hosting:** postponed. The app runs locally for now. Deployment is parked in [Later – Deploy](#later--deploy-postponed) at the end of this file.
+**Hosting:** live. Deployment was done after block 10; see [Deploy](#deploy-done-after-block-10) at the end of this file.
 
 ## Core idea: tracking habits with someone else
 
@@ -34,7 +34,7 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 6. Add a `GET /api/health` endpoint, and configure Vite's dev proxy so `/api` calls reach the API.
 7. Show the health response on the React home page.
 
-**Concepts:** solution and project structure in .NET · minimal APIs · `Program.cs` and the middleware pipeline · Vite dev server and proxy · why a proxy avoids CORS in development · running a local database for development · environment-specific config (`appsettings.Development.json`)
+**Concepts:** solution and project structure in .NET · minimal APIs · `Program.cs` and the middleware pipeline · Vite dev server and proxy · why a proxy avoids CORS in development · running a local database for development · environment-specific config (`appsettings.{Environment}.json`)
 
 **Files:** `backend/HabitTracker.sln`, `backend/src/HabitTracker.Api/*`, `frontend/*`, `.gitignore`
 
@@ -113,7 +113,7 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 
 ## Block 5 – Deploy (postponed)
 
-**Skipped for now.** Deployment was moved to [Later – Deploy](#later--deploy-postponed) at the end of this file, so we can focus on building the app locally. Block numbers stay the same so code comments that mention block numbers still match. After block 4, go straight to block 6.
+**Skipped for now.** Deployment was moved to [Deploy](#deploy-done-after-block-10) at the end of this file, so we can focus on building the app locally. Block numbers stay the same so code comments that mention block numbers still match. After block 4, go straight to block 6.
 
 ---
 
@@ -211,7 +211,7 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 2. Loading skeletons, empty states ("Create your first habit"), and friendly error messages.
 3. Mobile layout pass and basic accessibility (labels, focus states, contrast).
 4. A landing page for logged-out visitors explaining the app.
-5. Seed a demo account with sample data.
+5. Seed a demo account with sample data. *(Removed later.)*
 6. README: description, features, screenshots, architecture diagram, tech stack, demo login, how to run locally (add the live link once the app is deployed).
 7. Tag the release `v1.0.0`.
 
@@ -311,7 +311,9 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 
 ---
 
-# Later – Deploy (postponed)
+# Deploy (done after block 10)
+
+**How it shipped:** instead of a separate Static Web App, the API serves the built React app, so everything runs from one App Service with one address. One workflow, `.github/workflows/deploy.yml`, lints, tests, builds and deploys both. Tasks 8 and 9 and the files below describe the original two-host plan.
 
 Moved out of the main plan on purpose. Do this whenever you want the app online, ideally after block 10 (v1). It needs a GitHub repo and an Azure account (Azure asks for a card at sign-up; Azure for Students doesn't).
 

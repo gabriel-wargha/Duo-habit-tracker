@@ -1,7 +1,7 @@
 # Habit Tracker – Build Plan
 
 Stack: ASP.NET Core Web API + EF Core + Postgres | React + TypeScript + Vite + TanStack Query + Tailwind
-Hosting: postponed – the app runs locally for now (see "Later" below).
+Hosting: live on one Azure App Service (API + website), Neon for the database (see "Deploy" below).
 
 ## Part 1 – Build the app (blocks 1–10)
 - [x] 1. Project setup – repo, scaffold API + Vite React-TS, local Postgres (Homebrew), Vite proxy. Done: React shows data from API.
@@ -13,7 +13,7 @@ Hosting: postponed – the app runs locally for now (see "Later" below).
 - [x] 7. Check-ins and streaks – "done today" toggle, unit-tested streak logic, last-7-days dots.
 - [x] 8. Invite a partner – share link with expiring code, accept page adds HabitMember.
 - [x] 9. Track together – side-by-side check-ins, each streak + joint streak, polling refresh.
-- [x] 10. Polish + v1 – heatmap, loading/empty/error states, mobile, demo account, README.
+- [x] 10. Polish + v1 – heatmap, loading/empty/error states, mobile, demo account (removed later), README.
 
 ## Part 2 – Make it amazing (blocks 11–15)
 - [ ] 11. Real-time with SignalR – instant partner updates, nudge button.
@@ -22,7 +22,7 @@ Hosting: postponed – the app runs locally for now (see "Later" below).
 - [ ] 14. Insights and achievements – year heatmap, trends, streak badges.
 - [ ] 15. Production quality – Testcontainers tests, PWA, Google login, refresh tokens, monitoring.
 
-## Later – Deploy (postponed)
-- [ ] Deploy – Neon DB, Azure App Service + Static Web Apps, CORS, HSTS, forwarded headers, env vars, GitHub Actions. Details at the end of BLOCKS.md.
+## Deploy (done after block 10)
+- [x] Deploy – Neon DB, Azure App Service, CORS, HSTS, forwarded headers, env vars, GitHub Actions. Shipped as one App Service that serves the API and the website, instead of a separate Static Web App. Details at the end of BLOCKS.md.
 
 Tip: commit at the end of every block.

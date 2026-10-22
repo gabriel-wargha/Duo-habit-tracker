@@ -8,7 +8,7 @@ The project owner is **learning** while building, so the explanations matter as 
 - **What:** A social habit tracker. Users log in, track habits, and track habits *together* with partners.
 - **Plan:** `docs/PLAN.md` is the checklist. `docs/BLOCKS.md` has the details for every block (goal, tasks, concepts, files, done-when, commit).
 - **Stack:** ASP.NET Core Web API + EF Core + PostgreSQL (`backend/`) · React + TypeScript + Vite + TanStack Query + React Router + Tailwind (`frontend/`).
-- **Hosting:** postponed. The app runs locally (API + React + Postgres from Homebrew). Deployment is parked under "Later – Deploy" at the end of `docs/BLOCKS.md`; don't add hosting, CORS-for-production or deploy workflows unless the owner asks.
+- **Hosting:** live on one Azure App Service: the API also serves the built React app, and `.github/workflows/deploy.yml` tests and deploys every push to `main`. The database is Neon in production and Postgres from Homebrew locally. Don't add paid services or new hosting without asking.
 
 ## The workflow
 
@@ -88,7 +88,7 @@ habit-tracker/
 ├── docs/
 │   ├── PLAN.md
 │   └── BLOCKS.md
-├── .github/workflows/   # CI in block 15; deploy workflows later
+├── .github/workflows/   # deploy.yml: test + deploy to Azure
 ├── backend/
 │   ├── global.json          # pins the .NET SDK version
 │   ├── .config/dotnet-tools.json  # dotnet-ef

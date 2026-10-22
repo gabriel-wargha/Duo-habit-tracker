@@ -9,7 +9,9 @@ TestResults/
 # --- Node / Vite ---
 node_modules/
 dist/
+dist-ssr/
 *.local
+logs/
 
 # --- Environment files (secrets!) ---
 # Only .env.example is committed; real values stay on your machine.

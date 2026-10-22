@@ -15,7 +15,6 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - 'global.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch: # the "Run workflow" button
 
@@ -50,17 +49,20 @@ jobs:
         working-directory: frontend
 
       # ----- Backend -----
-      - name: Install the .NET SDK (the version pinned in global.json)
+      - name: Install the .NET SDK (the version pinned in backend/global.json)
         uses: actions/setup-dotnet@v6
         with:
-          global-json-file: global.json
+          global-json-file: backend/global.json
 
+      # Run from backend/ so dotnet finds backend/global.json (it looks in the current folder and up).
       - name: Run the tests
-        run: dotnet test backend/HabitTracker.slnx --configuration Release
+        run: dotnet test HabitTracker.slnx --configuration Release
+        working-directory: backend
 
       # "publish" = compile in Release mode and gather everything the app needs to run into one folder.
       - name: Publish the API
-        run: dotnet publish backend/src/HabitTracker.Api --configuration Release --output publish
+        run: dotnet publish src/HabitTracker.Api --configuration Release --output ../publish
+        working-directory: backend
 
       # The website's files go in wwwroot, the folder ASP.NET Core serves static files from.
       - name: Put the website inside the API

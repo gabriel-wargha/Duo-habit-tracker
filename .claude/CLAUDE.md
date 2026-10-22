@@ -2,4 +2,4 @@
 
 Follow the workflow and rules in AGENTS.md.
 
-@AGENTS.md
+@../AGENTS.md

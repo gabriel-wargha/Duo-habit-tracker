@@ -21,7 +21,7 @@ No install needed: open the link, create an account and start tracking. It runs 
 
 Steps to build and/or run the software:
 
-1. **Start a PostgreSQL database.** Either use Docker (`docker compose up -d`, which uses `docker-compose.yml`) or Homebrew on macOS:
+1. **Start a PostgreSQL database.** On macOS, with Homebrew:
    ```bash
    brew install postgresql@17 && brew services start postgresql@17
    createdb habittracker
@@ -29,9 +29,7 @@ Steps to build and/or run the software:
 2. **Configure the API.** Secrets live in .NET user secrets, outside the repo:
    ```bash
    cd backend/src/HabitTracker.Api
-   # Docker:
-   dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=habittracker;Username=habit;Password=habit_dev_password"
-   # Homebrew (your macOS user, no password):
+   # Your macOS user, no password (Homebrew's default):
    dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Database=habittracker;Username=$(whoami)"
    # Any random string of 32+ characters:
    dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
@@ -62,9 +60,9 @@ Instructions for using the software:
 
 To recreate the development environment, you need the following software and/or libraries with the specified versions:
 
-* [.NET SDK 10](https://dotnet.microsoft.com/download) (10.0.103, pinned in `global.json`) with ASP.NET Core minimal APIs
+* [.NET SDK 10](https://dotnet.microsoft.com/download) (10.0.103, pinned in `backend/global.json`) with ASP.NET Core minimal APIs
 * Entity Framework Core 10 with Npgsql (the PostgreSQL provider) and JWT Bearer authentication
-* [PostgreSQL 17](https://www.postgresql.org/download/) (Docker or Homebrew)
+* [PostgreSQL 17](https://www.postgresql.org/download/) (Homebrew on macOS)
 * [Node.js 22+](https://nodejs.org) and npm
 * React 19, TypeScript 6 (strict mode), Vite 8
 * TanStack Query 5, React Router 7, Tailwind CSS 4

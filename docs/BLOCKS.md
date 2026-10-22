@@ -30,13 +30,13 @@ User 1───* HabitMember *───1 Habit 1───* CheckIn *───1 U
 2. Scaffold the API: `dotnet new webapi -n HabitTracker.Api` inside `backend/src/`, plus a solution file.
 3. Scaffold the frontend: `npm create vite@latest frontend -- --template react-ts`.
 4. Add Tailwind CSS to the frontend.
-5. Add `docker-compose.yml` with a Postgres container for local development.
+5. Install PostgreSQL locally with Homebrew (`brew install postgresql@17`) and create the `habittracker` database.
 6. Add a `GET /api/health` endpoint, and configure Vite's dev proxy so `/api` calls reach the API.
 7. Show the health response on the React home page.
 
-**Concepts:** solution and project structure in .NET · minimal APIs · `Program.cs` and the middleware pipeline · Vite dev server and proxy · why a proxy avoids CORS in development · Docker containers for databases · environment-specific config (`appsettings.Development.json`)
+**Concepts:** solution and project structure in .NET · minimal APIs · `Program.cs` and the middleware pipeline · Vite dev server and proxy · why a proxy avoids CORS in development · running a local database for development · environment-specific config (`appsettings.Development.json`)
 
-**Files:** `backend/HabitTracker.sln`, `backend/src/HabitTracker.Api/*`, `frontend/*`, `docker-compose.yml`, `.gitignore`
+**Files:** `backend/HabitTracker.sln`, `backend/src/HabitTracker.Api/*`, `frontend/*`, `.gitignore`
 
 **Done when:** the React page shows "API is healthy" fetched from the backend.
 

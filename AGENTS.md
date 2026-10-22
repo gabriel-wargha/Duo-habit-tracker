@@ -8,7 +8,7 @@ The project owner is **learning** while building, so the explanations matter as 
 - **What:** A social habit tracker. Users log in, track habits, and track habits *together* with partners.
 - **Plan:** `docs/PLAN.md` is the checklist. `docs/BLOCKS.md` has the details for every block (goal, tasks, concepts, files, done-when, commit).
 - **Stack:** ASP.NET Core Web API + EF Core + PostgreSQL (`backend/`) · React + TypeScript + Vite + TanStack Query + React Router + Tailwind (`frontend/`).
-- **Hosting:** postponed. The app runs locally (API + React + Postgres in Docker). Deployment is parked under "Later – Deploy" at the end of `docs/BLOCKS.md`; don't add hosting, CORS-for-production or deploy workflows unless the owner asks.
+- **Hosting:** postponed. The app runs locally (API + React + Postgres from Homebrew). Deployment is parked under "Later – Deploy" at the end of `docs/BLOCKS.md`; don't add hosting, CORS-for-production or deploy workflows unless the owner asks.
 
 ## The workflow
 
@@ -82,14 +82,16 @@ Cover **every concept listed for the block in `docs/BLOCKS.md`**, plus any new c
 
 ```
 habit-tracker/
+├── .claude/CLAUDE.md   # points Claude Code to this file
 ├── AGENTS.md
 ├── README.md
 ├── docs/
 │   ├── PLAN.md
 │   └── BLOCKS.md
-├── docker-compose.yml
 ├── .github/workflows/   # CI in block 15; deploy workflows later
 ├── backend/
+│   ├── global.json          # pins the .NET SDK version
+│   ├── .config/dotnet-tools.json  # dotnet-ef
 │   ├── HabitTracker.sln
 │   ├── src/HabitTracker.Api/
 │   │   ├── Program.cs

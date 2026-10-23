@@ -24,7 +24,6 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Controlled inputs: React state is the single source of truth for each field's value.
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Errors>({})

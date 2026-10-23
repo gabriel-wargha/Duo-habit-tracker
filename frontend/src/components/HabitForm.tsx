@@ -48,8 +48,6 @@ export function HabitForm({ habit, submitLabel, onSubmit, onCancel }: HabitFormP
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // A generic setter: `K` ties the field name to its value type,
-  // so set('scheduleDays', 'abc') is a compile error.
   function set<K extends keyof FormValues>(field: K, value: FormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }))
   }

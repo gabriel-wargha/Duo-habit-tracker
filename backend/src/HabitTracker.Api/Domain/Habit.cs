@@ -11,14 +11,13 @@ public class Habit
     // Hex color like "#22c55e".
     public string Color { get; set; } = "#22c55e";
 
-    // Which weekdays the habit is scheduled on, as a bitmask (block 6).
-    // 127 = all 7 bits set = every day.
+    // Which weekdays the habit is scheduled on, as a bitmask: 1 = Sunday ... 64 = Saturday, 127 = every day.
     public int ScheduleDays { get; set; } = 127;
 
-    // The first calendar day the habit counts from (check-ins before it are rejected in block 7).
+    // The first calendar day the habit counts from. Check-ins before it are rejected.
     public DateOnly StartDate { get; set; }
 
-    // Soft delete: archived habits are hidden, not removed (block 6).
+    // Soft delete: archived habits are hidden, but their check-ins and history are kept.
     public bool IsArchived { get; set; }
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

@@ -32,11 +32,8 @@ export const habitKeys = {
 // Polling: a partner's check-in happens on *their* phone, so nothing tells our browser about it.
 // We ask again every 30 seconds while the page is visible (TanStack Query pauses the timer
 // in background tabs), and right away when you come back to the tab (refetchOnWindowFocus).
-// Block 11 replaces this with SignalR, where the server pushes changes instantly.
 const POLL_INTERVAL_MS = 30_000
 
-// Query = reading data. TanStack Query fetches it, caches it, and gives us
-// isPending / isError / data, so components don't need their own useEffect + useState.
 export function useHabits() {
   const today = localToday()
   return useQuery({
@@ -57,8 +54,6 @@ export function useHabitDetail(id: string) {
   })
 }
 
-// Mutation = changing data. After it succeeds, we invalidate the list
-// so the dashboard refetches and shows the change.
 export function useCreateHabit() {
   const queryClient = useQueryClient()
   return useMutation({

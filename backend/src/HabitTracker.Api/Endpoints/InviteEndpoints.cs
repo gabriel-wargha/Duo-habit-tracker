@@ -14,7 +14,7 @@ public static class InviteEndpoints
 {
     public static readonly TimeSpan InviteLifetime = TimeSpan.FromDays(7);
 
-    // Owner + one partner for now. Block 13 (groups) raises this.
+    // Owner + one partner. Groups would raise this.
     public const int MaxMembers = 2;
 
     public static RouteGroupBuilder MapInviteEndpoints(this RouteGroupBuilder api)

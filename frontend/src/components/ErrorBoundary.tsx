@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // In a real product this would go to an error-tracking service (block 15).
+    // Not sent anywhere yet: an error-tracking service would go here.
     console.error('Unexpected error', error, info.componentStack)
   }
 

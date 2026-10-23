@@ -66,7 +66,6 @@ export async function request<T>(path: string, options: { method?: string; body?
 
   let response: Response
   try {
-    // In development API_BASE is "", so this is the relative URL /api/..., which Vite's proxy forwards.
     response = await fetch(`${API_BASE}/api${path}`, {
       method: options.method ?? 'GET',
       headers,

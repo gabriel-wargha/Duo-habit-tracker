@@ -95,7 +95,7 @@ public static class StreakCalculator
         return scheduled == 0 ? 0 : (double)done / scheduled;
     }
 
-    // ----- Tracking together (block 9) -----
+    // ----- Tracking together -----
 
     // When a member's stats start. The owner counts from the habit's start date. A partner counts
     // from the day they joined: days before that weren't "missed", they just weren't there yet.

@@ -33,7 +33,6 @@ public static class AuthEndpoints
             .WithName("Login")
             .RequireRateLimiting(LoginRateLimitPolicy);
 
-        // RequireAuthorization: no valid token → 401, and this code never runs.
         auth.MapGet("/me", Me)
             .WithName("GetMe")
             .RequireAuthorization();
@@ -60,8 +59,6 @@ public static class AuthEndpoints
             Email = email,
             DisplayName = request.DisplayName.Trim(),
         };
-        // Hash = one-way, salted and deliberately slow. We can check a password against it,
-        // but nobody (not even us) can turn it back into the password.
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
         db.Users.Add(user);
@@ -120,8 +117,6 @@ public static class AuthEndpoints
     // GET /api/auth/me
     private static async Task<IResult> Me(ClaimsPrincipal principal, AppDbContext db)
     {
-        // The JWT middleware already checked the token and turned its claims into this principal.
-        // "sub" holds the user id we put in when creating the token.
         if (!Guid.TryParse(principal.FindFirstValue(JwtRegisteredClaimNames.Sub), out var userId))
         {
             return Results.Unauthorized();

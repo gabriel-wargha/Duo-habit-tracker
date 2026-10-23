@@ -111,7 +111,6 @@ export function DashboardPage() {
       )}
 
       <div className="mt-6">
-        {/* The three states of any query: loading, error, success. */}
         {habits.isPending && <DashboardSkeleton />}
 
         {habits.isError && (

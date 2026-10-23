@@ -46,7 +46,6 @@ public class TokenService(IOptions<JwtOptions> options)
             Issuer = _jwt.Issuer,
             Audience = _jwt.Audience,
             Expires = expiresAtUtc,
-            // HMAC-SHA256: the signature proves the token came from us and wasn't edited.
             SigningCredentials = new SigningCredentials(_jwt.GetSigningKey(), SecurityAlgorithms.HmacSha256),
         };
 

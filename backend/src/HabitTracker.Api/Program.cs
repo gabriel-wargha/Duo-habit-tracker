@@ -14,8 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ----- 1. Services: things the app can use (registered in the DI container) -----
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// ----- 1. Services -----
 builder.Services.AddOpenApi();
 
 // The connection string comes from configuration: user secrets locally,
@@ -26,7 +25,7 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
-// Errors come back as ProblemDetails JSON (a standard shape: type, title, status, detail).
+// Errors come back as ProblemDetails JSON (RFC 9457).
 builder.Services.AddProblemDetails();
 
 // Send enums as readable strings ("Owner") instead of numbers (0), in both directions.
@@ -36,7 +35,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Checks the [Required], [EmailAddress], ... attributes on request DTOs. Invalid → 400.
 builder.Services.AddValidation();
 
-// --- Authentication: "who are you?" We read and verify a JWT from the Authorization header. ---
+// --- Authentication: a JWT in the Authorization header. ---
 // Same rule as the connection string: the signing key comes from user secrets / Azure, never git.
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("Missing 'Jwt' configuration section.");
@@ -59,7 +58,6 @@ builder.Services
         // instead of renaming them to long Microsoft URIs.
         options.MapInboundClaims = false;
 
-        // Every request with a token is checked against these rules. Fail any → 401.
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -75,7 +73,8 @@ builder.Services
         };
     });
 
-// --- Authorization: "are you allowed to do this?" Policies are added in later blocks. ---
+// --- Authorization: RequireAuthorization() means "logged in". ---
+// Per-habit rules (member? owner?) depend on the habit, so the endpoints check them.
 builder.Services.AddAuthorization();
 
 // --- Rate limiting: slow down password guessing on /login. ---
@@ -107,11 +106,10 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-// --- CORS: which *other* websites may call this API from a browser (deploy). ---
-// Locally the browser only talks to Vite (same origin), so this list is empty and nothing changes.
-// Online, the frontend (https://….azurestaticapps.net) and the API (https://….azurewebsites.net)
-// are different origins, and the browser blocks the call unless the API says that origin is allowed.
-// Set it in Azure as the app setting Cors__AllowedOrigins (several origins: separate with commas).
+// --- CORS: which *other* websites may call this API from a browser. ---
+// Empty by default: locally the browser talks to Vite's proxy, and in production the API serves the
+// website itself, so every call is same-origin. Only needed if the frontend is ever hosted elsewhere:
+// set Cors__AllowedOrigins (several origins: separate with commas).
 var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "")
     .Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
@@ -119,7 +117,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     // No AllowCredentials: we send the JWT in a header, not in a cookie.
     policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
 
-// --- Forwarded headers: the real visitor behind Azure's proxy (deploy). ---
+// --- Forwarded headers: the real visitor behind Azure's proxy. ---
 // On Azure, requests reach us through Azure's front-end proxy, so the connection's IP is the proxy's.
 // The proxy puts the visitor's real IP in X-Forwarded-For (and "https" in X-Forwarded-Proto).
 // Without reading them, every visitor would share ONE login rate limit: 5 attempts per minute for everyone.
@@ -140,7 +138,7 @@ builder.Services.AddResponseCompression(options => options.EnableForHttps = true
 
 var app = builder.Build();
 
-// ----- 2. Middleware pipeline: every request passes through these, in order -----
+// ----- 2. Middleware pipeline (order matters) -----
 // First, so everything after it (HTTPS redirection, rate limiting, logs) sees the real IP and scheme.
 app.UseForwardedHeaders();
 
@@ -174,7 +172,7 @@ app.UseStatusCodePages();
 // runs, and adds the "allowed" headers to every response, including errors like 401 and 429.
 app.UseCors();
 
-// ----- The website (deploy option B): this API also serves the built React app -----
+// ----- The website: this API also serves the built React app -----
 // The deploy workflow copies frontend/dist into wwwroot next to the API. Locally there's no wwwroot
 // (Vite serves the frontend on :5173), so this does nothing in development.
 app.UseWhen(context => !context.Request.Path.StartsWithSegments("/api"), website => website.UseResponseCompression());
@@ -199,7 +197,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
-// ----- 3. Endpoints: all our routes live under /api -----
+// ----- 3. Endpoints, all under /api -----
 var api = app.MapGroup("/api");
 api.MapHealthEndpoints();
 api.MapAuthEndpoints();

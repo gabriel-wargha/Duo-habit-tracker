@@ -2,11 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HabitTracker.Api.Contracts;
 
-// DTOs ("data transfer objects") are the shapes the API sends and receives.
-// We never return the User entity directly: it holds the PasswordHash.
-
-// The attributes are checked automatically before our endpoint runs
-// (builder.Services.AddValidation() in Program.cs). Bad input → 400 with the details.
+// Request/response shapes. Entities are never returned directly: User holds the PasswordHash.
+// The validation attributes run before the endpoint (AddValidation() in Program.cs): bad input → 400.
 public record RegisterRequest(
     [property: Required, EmailAddress, MaxLength(256)] string Email,
     [property: Required, MinLength(8), MaxLength(100)] string Password,

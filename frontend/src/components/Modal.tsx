@@ -8,8 +8,7 @@ type ModalProps = {
   children: ReactNode
 }
 
-// Our modal, now on top of shadcn's Dialog (Radix). Radix handles what we used to get from
-// <dialog>: Esc to close, focus kept inside, the backdrop, plus open/close animations.
+// A modal on top of shadcn's Dialog (Radix), which handles Esc, focus trapping, the backdrop and animations.
 // The parent still decides when it's shown by rendering it or not: {open && <Modal ... />}.
 export function Modal({ title, description, onClose, children }: ModalProps) {
   return (

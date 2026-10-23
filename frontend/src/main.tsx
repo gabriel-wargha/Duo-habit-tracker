@@ -10,7 +10,6 @@ import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import { Toaster } from './components/ui/sonner.tsx'
 import { TooltipProvider } from './components/ui/tooltip.tsx'
 
-// One cache for all API data in the app.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -22,13 +21,8 @@ const queryClient = new QueryClient({
   },
 })
 
-// BrowserRouter: reads the URL and lets <Routes> pick a page without full reloads.
-// QueryClientProvider: gives every component access to the query cache (outside AuthProvider,
-// because logging out clears that cache).
-// AuthProvider: makes the logged-in user available to every component via useAuth().
-// ErrorBoundary: outermost, so a crash anywhere shows a friendly page instead of a blank one.
-// TooltipProvider: shared settings (like the hover delay) for every tooltip in the app.
-// Toaster: where toast(...) messages appear (bottom right), from any component.
+// ErrorBoundary is outermost, so a crash anywhere shows a friendly page instead of a blank one.
+// QueryClientProvider wraps AuthProvider, because logging out clears the query cache.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

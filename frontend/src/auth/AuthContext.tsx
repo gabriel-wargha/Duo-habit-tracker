@@ -66,7 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (request: LoginRequest) => signIn(await authApi.login(request)), [signIn])
   const register = useCallback(async (request: RegisterRequest) => signIn(await authApi.register(request)), [signIn])
 
-  // useMemo: consumers only re-render when one of these values actually changes.
   const value = useMemo(
     () => ({ user, status, login, register, logout, retry }),
     [user, status, login, register, logout, retry],
